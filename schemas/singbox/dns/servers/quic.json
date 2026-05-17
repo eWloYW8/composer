@@ -1,0 +1,44 @@
+{
+  "type": "quic",
+  "label": "QUIC",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "server",
+      "label": "服务器地址",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "server_port",
+      "label": "服务器端口",
+      "kind": "number",
+      "min": 1,
+      "max": 65535,
+      "defaultValue": 853
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "defaultValue": {
+        "enabled": true
+      },
+      "ref": "shared/tls-outbound.json"
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+[
+  {
+    "key": "detour",
+    "label": "转发到入站",
+    "kind": "string"
+  },
+  {
+    "key": "listen",
+    "label": "监听地址",
+    "kind": "string",
+    "required": true,
+    "defaultValue": "127.0.0.1",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "listen_port",
+    "label": "监听端口",
+    "kind": "number",
+    "required": true,
+    "min": 1,
+    "max": 65535,
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "bind_interface",
+    "label": "绑定接口",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "routing_mark",
+    "label": "routing_mark",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "reuse_addr",
+    "label": "reuse_addr",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "netns",
+    "label": "netns",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_fast_open",
+    "label": "TCP Fast Open",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_multi_path",
+    "label": "TCP Multi Path",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "disable_tcp_keep_alive",
+    "label": "禁用 TCP keepalive",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_keep_alive",
+    "label": "TCP keepalive",
+    "kind": "string",
+    "placeholder": "5m",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_keep_alive_interval",
+    "label": "TCP keepalive 间隔",
+    "kind": "string",
+    "placeholder": "75s",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "udp_fragment",
+    "label": "UDP fragment",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "udp_timeout",
+    "label": "UDP timeout",
+    "kind": "string",
+    "placeholder": "5m",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  }
+]

@@ -1,0 +1,80 @@
+{
+  "type": "cloudflared",
+  "label": "Cloudflared",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "token",
+      "label": "Token",
+      "kind": "string",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "ha_connections",
+      "label": "HA connections",
+      "kind": "number",
+      "min": 0
+    },
+    {
+      "key": "protocol",
+      "label": "协议",
+      "kind": "select",
+      "options": ["", "quic", "http2"]
+    },
+    {
+      "key": "post_quantum",
+      "label": "Post quantum",
+      "kind": "boolean"
+    },
+    {
+      "key": "edge_ip_version",
+      "label": "Edge IP version",
+      "kind": "select",
+      "valueType": "number",
+      "options": ["", "0", "4", "6"]
+    },
+    {
+      "key": "datagram_version",
+      "label": "Datagram version",
+      "kind": "select",
+      "options": ["", "v2", "v3"],
+      "visibleWhen": [
+        {
+          "key": "protocol",
+          "op": "one-of",
+          "values": ["quic"]
+        }
+      ]
+    },
+    {
+      "key": "grace_period",
+      "label": "Grace period",
+      "kind": "string"
+    },
+    {
+      "key": "region",
+      "label": "Region",
+      "kind": "string"
+    },
+    {
+      "key": "control_dialer",
+      "label": "Control dialer",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/dialer.json"
+    },
+    {
+      "key": "tunnel_dialer",
+      "label": "Tunnel dialer",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

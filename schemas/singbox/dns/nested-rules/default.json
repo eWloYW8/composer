@@ -1,0 +1,14 @@
+{
+  "type": "default",
+  "label": "Default",
+  "fields": [
+    {
+      "key": "_match",
+      "label": "匹配字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dns-rule-match.json"
+    }
+  ]
+}

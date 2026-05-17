@@ -1,0 +1,194 @@
+[
+  {
+    "key": "action",
+    "label": "动作",
+    "kind": "select",
+    "required": true,
+    "defaultValue": "route",
+    "options": [
+      "route",
+      "evaluate",
+      "respond",
+      "route-options",
+      "reject",
+      "predefined"
+    ]
+  },
+  {
+    "key": "server",
+    "label": "DNS 服务器",
+    "kind": "string",
+    "required": true,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate"]
+      }
+    ]
+  },
+  {
+    "key": "strategy",
+    "label": "域名策略",
+    "kind": "select",
+    "options": ["", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate"]
+      }
+    ]
+  },
+  {
+    "key": "timeout",
+    "label": "超时",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "disable_cache",
+    "label": "禁用缓存",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "disable_optimistic_cache",
+    "label": "禁用乐观缓存",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "rewrite_ttl",
+    "label": "重写 TTL",
+    "kind": "number",
+    "min": 0,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "client_subnet",
+    "label": "Client subnet",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "evaluate", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "method",
+    "label": "拒绝方式",
+    "kind": "select",
+    "options": ["", "default", "drop"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "reject"
+      }
+    ]
+  },
+  {
+    "key": "no_drop",
+    "label": "不自动丢弃",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "reject"
+      },
+      {
+        "key": "method",
+        "op": "not-equals",
+        "value": "drop"
+      }
+    ]
+  },
+  {
+    "key": "rcode",
+    "label": "RCODE",
+    "kind": "select",
+    "options": [
+      "",
+      "NOERROR",
+      "FORMERR",
+      "SERVFAIL",
+      "NXDOMAIN",
+      "NOTIMP",
+      "REFUSED"
+    ],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "predefined"
+      }
+    ]
+  },
+  {
+    "key": "answer",
+    "label": "Answer 记录",
+    "kind": "string-list",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "predefined"
+      }
+    ]
+  },
+  {
+    "key": "ns",
+    "label": "NS 记录",
+    "kind": "string-list",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "predefined"
+      }
+    ]
+  },
+  {
+    "key": "extra",
+    "label": "Extra 记录",
+    "kind": "string-list",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "predefined"
+      }
+    ]
+  }
+]

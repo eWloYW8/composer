@@ -1,0 +1,28 @@
+[
+  {
+    "key": "idle_timeout",
+    "label": "idle_timeout",
+    "kind": "string"
+  },
+  {
+    "key": "keep_alive_period",
+    "label": "keep_alive_period",
+    "kind": "string"
+  },
+  {
+    "key": "stream_receive_window",
+    "label": "stream_receive_window",
+    "kind": "string"
+  },
+  {
+    "key": "connection_receive_window",
+    "label": "connection_receive_window",
+    "kind": "string"
+  },
+  {
+    "key": "max_concurrent_streams",
+    "label": "max_concurrent_streams",
+    "kind": "number",
+    "min": 0
+  }
+]

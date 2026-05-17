@@ -1,0 +1,66 @@
+{
+  "type": "vmess",
+  "label": "VMess",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "uuid",
+          "label": "UUID",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "alterId",
+          "label": "Alter ID",
+          "kind": "number",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    },
+    {
+      "key": "multiplex",
+      "label": "多路复用",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/inbound-multiplex.json"
+    },
+    {
+      "key": "transport",
+      "label": "V2Ray 传输",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/v2ray-transport.json"
+    }
+  ]
+}

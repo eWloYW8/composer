@@ -1,0 +1,407 @@
+[
+  {
+    "key": "enabled",
+    "label": "启用 TLS",
+    "kind": "boolean",
+    "defaultValue": true
+  },
+  {
+    "key": "server_name",
+    "label": "Server Name",
+    "kind": "string"
+  },
+  {
+    "key": "insecure",
+    "label": "跳过证书验证",
+    "kind": "boolean"
+  },
+  {
+    "key": "alpn",
+    "label": "ALPN",
+    "kind": "string-list"
+  },
+  {
+    "key": "min_version",
+    "label": "最低 TLS 版本",
+    "kind": "select",
+    "options": ["", "1.0", "1.1", "1.2", "1.3"]
+  },
+  {
+    "key": "max_version",
+    "label": "最高 TLS 版本",
+    "kind": "select",
+    "options": ["", "1.0", "1.1", "1.2", "1.3"]
+  },
+  {
+    "key": "cipher_suites",
+    "label": "Cipher suites",
+    "kind": "string-list"
+  },
+  {
+    "key": "curve_preferences",
+    "label": "Curve preferences",
+    "kind": "string-list",
+    "allowedValues": ["P256", "P384", "P521", "X25519", "X25519MLKEM768"]
+  },
+  {
+    "key": "certificate",
+    "label": "证书",
+    "kind": "string-list",
+    "wide": true
+  },
+  {
+    "key": "certificate_path",
+    "label": "证书路径",
+    "kind": "string"
+  },
+  {
+    "key": "client_authentication",
+    "label": "客户端认证",
+    "kind": "select",
+    "options": ["", "no", "request", "require-any", "verify-if-given", "require-and-verify"]
+  },
+  {
+    "key": "client_certificate",
+    "label": "客户端证书",
+    "kind": "string-list",
+    "wide": true
+  },
+  {
+    "key": "client_certificate_path",
+    "label": "客户端证书路径",
+    "kind": "string-list"
+  },
+  {
+    "key": "client_certificate_public_key_sha256",
+    "label": "客户端证书公钥 SHA256",
+    "kind": "string-list"
+  },
+  {
+    "key": "key",
+    "label": "私钥",
+    "kind": "string-list",
+    "wide": true
+  },
+  {
+    "key": "key_path",
+    "label": "私钥路径",
+    "kind": "string"
+  },
+  {
+    "key": "kernel_tx",
+    "label": "kernel_tx",
+    "kind": "boolean"
+  },
+  {
+    "key": "kernel_rx",
+    "label": "kernel_rx",
+    "kind": "boolean"
+  },
+  {
+    "key": "handshake_timeout",
+    "label": "TLS 握手超时",
+    "kind": "string"
+  },
+  {
+    "key": "certificate_provider",
+    "label": "证书提供器",
+    "kind": "string-or-object",
+    "wide": true,
+    "fields": [
+      {
+        "key": "type",
+        "label": "类型",
+        "kind": "select",
+        "required": true,
+        "options": ["acme", "tailscale", "cloudflare-origin-ca"]
+      },
+      {
+        "key": "domain",
+        "label": "域名",
+        "kind": "string-list",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme", "cloudflare-origin-ca"]
+          }
+        ]
+      },
+      {
+        "key": "data_directory",
+        "label": "数据目录",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme", "cloudflare-origin-ca"]
+          }
+        ]
+      },
+      {
+        "key": "default_server_name",
+        "label": "默认 Server Name",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "email",
+        "label": "Email",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "provider",
+        "label": "ACME provider",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "account_key",
+        "label": "Account key",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "disable_http_challenge",
+        "label": "禁用 HTTP challenge",
+        "kind": "boolean",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "disable_tls_alpn_challenge",
+        "label": "禁用 TLS ALPN challenge",
+        "kind": "boolean",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "alternative_http_port",
+        "label": "替代 HTTP 端口",
+        "kind": "number",
+        "min": 1,
+        "max": 65535,
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "alternative_tls_port",
+        "label": "替代 TLS 端口",
+        "kind": "number",
+        "min": 1,
+        "max": 65535,
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "key_type",
+        "label": "Key type",
+        "kind": "select",
+        "options": ["", "ed25519", "p256", "p384", "rsa2048", "rsa4096"],
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "profile",
+        "label": "Profile",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme"]
+          }
+        ]
+      },
+      {
+        "key": "api_token",
+        "label": "API token",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["cloudflare-origin-ca"]
+          }
+        ]
+      },
+      {
+        "key": "origin_ca_key",
+        "label": "Origin CA key",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["cloudflare-origin-ca"]
+          }
+        ]
+      },
+      {
+        "key": "request_type",
+        "label": "Request type",
+        "kind": "select",
+        "options": ["", "origin-rsa", "origin-ecc"],
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["cloudflare-origin-ca"]
+          }
+        ]
+      },
+      {
+        "key": "requested_validity",
+        "label": "Requested validity",
+        "kind": "select",
+        "valueType": "number",
+        "options": ["", "7", "30", "90", "365", "730", "1095", "5475"],
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["cloudflare-origin-ca"]
+          }
+        ]
+      },
+      {
+        "key": "endpoint",
+        "label": "Endpoint",
+        "kind": "string",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["tailscale"]
+          }
+        ]
+      },
+      {
+        "key": "http_client",
+        "label": "HTTP client",
+        "kind": "string-or-object",
+        "wide": true,
+        "ref": "shared/http-client.json",
+        "visibleWhen": [
+          {
+            "key": "type",
+            "op": "one-of",
+            "values": ["acme", "cloudflare-origin-ca"]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "ech",
+    "label": "ECH",
+    "kind": "object",
+    "wide": true,
+    "fields": [
+      {
+        "key": "enabled",
+        "label": "启用 ECH",
+        "kind": "boolean",
+        "defaultValue": true
+      },
+      {
+        "key": "key",
+        "label": "ECH key",
+        "kind": "string-list"
+      },
+      {
+        "key": "key_path",
+        "label": "ECH key path",
+        "kind": "string"
+      }
+    ]
+  },
+  {
+    "key": "reality",
+    "label": "Reality",
+    "kind": "object",
+    "wide": true,
+    "fields": [
+      {
+        "key": "enabled",
+        "label": "启用 Reality",
+        "kind": "boolean",
+        "defaultValue": true
+      },
+      {
+        "key": "handshake",
+        "label": "Reality handshake",
+        "kind": "object",
+        "wide": true,
+        "ref": "shared/server-dialer.json"
+      },
+      {
+        "key": "private_key",
+        "label": "Private key",
+        "kind": "string"
+      },
+      {
+        "key": "short_id",
+        "label": "Short ID",
+        "kind": "string-list"
+      },
+      {
+        "key": "max_time_difference",
+        "label": "最大时间差",
+        "kind": "string",
+        "placeholder": "1m"
+      }
+    ]
+  }
+]

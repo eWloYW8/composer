@@ -1,0 +1,285 @@
+[
+  {
+    "key": "detour",
+    "label": "拨号 detour",
+    "kind": "string"
+  },
+  {
+    "key": "bind_interface",
+    "label": "绑定接口",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "inet4_bind_address",
+    "label": "IPv4 绑定地址",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "inet6_bind_address",
+    "label": "IPv6 绑定地址",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "bind_address_no_port",
+    "label": "绑定地址不含端口",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "protect_path",
+    "label": "protect_path",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "routing_mark",
+    "label": "routing_mark",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "reuse_addr",
+    "label": "reuse_addr",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "netns",
+    "label": "netns",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "connect_timeout",
+    "label": "连接超时",
+    "kind": "string",
+    "placeholder": "5s",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_fast_open",
+    "label": "TCP Fast Open",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_multi_path",
+    "label": "TCP Multi Path",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "disable_tcp_keep_alive",
+    "label": "禁用 TCP keepalive",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_keep_alive",
+    "label": "TCP keepalive",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tcp_keep_alive_interval",
+    "label": "TCP keepalive 间隔",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "udp_fragment",
+    "label": "UDP fragment",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "domain_resolver",
+    "label": "Domain resolver",
+    "kind": "string-or-object",
+    "wide": true,
+    "ref": "shared/dns-route-options.json",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "network_strategy",
+    "label": "网络策略",
+    "kind": "select",
+    "options": ["", "default", "fallback", "hybrid"],
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      },
+      {
+        "key": "bind_interface",
+        "op": "empty"
+      },
+      {
+        "key": "inet4_bind_address",
+        "op": "empty"
+      },
+      {
+        "key": "inet6_bind_address",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "network_type",
+    "label": "网络类型",
+    "kind": "string-list",
+    "allowedValues": ["wifi", "cellular", "ethernet", "other"],
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "fallback_network_type",
+    "label": "fallback 网络类型",
+    "kind": "string-list",
+    "allowedValues": ["wifi", "cellular", "ethernet", "other"],
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      },
+      {
+        "key": "network_strategy",
+        "op": "equals",
+        "value": "fallback"
+      }
+    ]
+  },
+  {
+    "key": "fallback_delay",
+    "label": "fallback delay",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "domain_strategy",
+    "label": "domain_strategy",
+    "kind": "select",
+    "options": [
+      "",
+      "as_is",
+      "prefer_ipv4",
+      "prefer_ipv6",
+      "ipv4_only",
+      "ipv6_only"
+    ],
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  }
+]

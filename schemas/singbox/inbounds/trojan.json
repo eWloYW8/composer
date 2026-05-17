@@ -1,0 +1,74 @@
+{
+  "type": "trojan",
+  "label": "Trojan",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    },
+    {
+      "key": "fallback",
+      "label": "默认回落",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/server-options.json"
+    },
+    {
+      "key": "fallback_for_alpn",
+      "label": "按 ALPN 回落",
+      "kind": "object-map",
+      "wide": true,
+      "ref": "shared/server-options.json"
+    },
+    {
+      "key": "multiplex",
+      "label": "多路复用",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/inbound-multiplex.json"
+    },
+    {
+      "key": "transport",
+      "label": "V2Ray 传输",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/v2ray-transport.json"
+    }
+  ]
+}

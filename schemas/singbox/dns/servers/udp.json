@@ -1,0 +1,34 @@
+{
+  "type": "udp",
+  "label": "UDP",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "server",
+      "label": "服务器地址",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "server_port",
+      "label": "服务器端口",
+      "kind": "number",
+      "min": 1,
+      "max": 65535,
+      "defaultValue": 53
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

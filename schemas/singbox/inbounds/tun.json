@@ -1,0 +1,274 @@
+{
+  "type": "tun",
+  "label": "TUN",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "interface_name",
+      "label": "接口名称",
+      "kind": "string"
+    },
+    {
+      "key": "mtu",
+      "label": "MTU",
+      "kind": "number",
+      "min": 0
+    },
+    {
+      "key": "address",
+      "label": "接口地址",
+      "kind": "string-list",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "dns_mode",
+      "label": "DNS 模式",
+      "kind": "select",
+      "options": ["", "disabled", "native", "hijack"]
+    },
+    {
+      "key": "dns_address",
+      "label": "DNS 地址",
+      "kind": "string-list"
+    },
+    {
+      "key": "auto_route",
+      "label": "自动路由",
+      "kind": "boolean"
+    },
+    {
+      "key": "iproute2_table_index",
+      "label": "iproute2 table index",
+      "kind": "number",
+      "min": 0
+    },
+    {
+      "key": "iproute2_rule_index",
+      "label": "iproute2 rule index",
+      "kind": "number",
+      "min": 0
+    },
+    {
+      "key": "auto_redirect",
+      "label": "自动重定向",
+      "kind": "boolean"
+    },
+    {
+      "key": "auto_redirect_input_mark",
+      "label": "auto_redirect_input_mark",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "auto_redirect",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "auto_redirect_output_mark",
+      "label": "auto_redirect_output_mark",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "auto_redirect",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "auto_redirect_reset_mark",
+      "label": "auto_redirect_reset_mark",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "auto_redirect",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "auto_redirect_nfqueue",
+      "label": "auto_redirect_nfqueue",
+      "kind": "number",
+      "min": 0,
+      "max": 65535,
+      "visibleWhen": [
+        {
+          "key": "auto_redirect",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "auto_redirect_iproute2_fallback_rule_index",
+      "label": "auto_redirect fallback rule index",
+      "kind": "number",
+      "min": 0,
+      "visibleWhen": [
+        {
+          "key": "auto_redirect",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "exclude_mptcp",
+      "label": "排除 MPTCP",
+      "kind": "boolean"
+    },
+    {
+      "key": "loopback_address",
+      "label": "Loopback 地址",
+      "kind": "string-list"
+    },
+    {
+      "key": "strict_route",
+      "label": "严格路由",
+      "kind": "boolean"
+    },
+    {
+      "key": "route_address",
+      "label": "路由地址",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "route_address_set",
+      "label": "路由规则集",
+      "kind": "string-list"
+    },
+    {
+      "key": "route_exclude_address",
+      "label": "排除路由地址",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "route_exclude_address_set",
+      "label": "排除路由规则集",
+      "kind": "string-list"
+    },
+    {
+      "key": "include_interface",
+      "label": "包含接口",
+      "kind": "string-list"
+    },
+    {
+      "key": "exclude_interface",
+      "label": "排除接口",
+      "kind": "string-list"
+    },
+    {
+      "key": "include_uid",
+      "label": "包含 UID",
+      "kind": "number-list",
+      "min": 0
+    },
+    {
+      "key": "include_uid_range",
+      "label": "包含 UID 范围",
+      "kind": "string-list"
+    },
+    {
+      "key": "exclude_uid",
+      "label": "排除 UID",
+      "kind": "number-list",
+      "min": 0
+    },
+    {
+      "key": "exclude_uid_range",
+      "label": "排除 UID 范围",
+      "kind": "string-list"
+    },
+    {
+      "key": "include_android_user",
+      "label": "包含 Android 用户",
+      "kind": "number-list",
+      "min": 0
+    },
+    {
+      "key": "include_package",
+      "label": "包含包名",
+      "kind": "string-list"
+    },
+    {
+      "key": "exclude_package",
+      "label": "排除包名",
+      "kind": "string-list"
+    },
+    {
+      "key": "include_mac_address",
+      "label": "包含 MAC 地址",
+      "kind": "string-list"
+    },
+    {
+      "key": "exclude_mac_address",
+      "label": "排除 MAC 地址",
+      "kind": "string-list"
+    },
+    {
+      "key": "udp_timeout",
+      "label": "UDP timeout",
+      "kind": "string",
+      "placeholder": "5m"
+    },
+    {
+      "key": "stack",
+      "label": "协议栈",
+      "kind": "select",
+      "options": ["", "system", "gvisor", "mixed"]
+    },
+    {
+      "key": "platform",
+      "label": "平台选项",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "http_proxy",
+          "label": "HTTP 代理",
+          "kind": "object",
+          "wide": true,
+          "fields": [
+            {
+              "key": "enabled",
+              "label": "启用 HTTP 代理",
+              "kind": "boolean",
+              "defaultValue": true
+            },
+            {
+              "key": "server",
+              "label": "服务器地址",
+              "kind": "string",
+              "required": true
+            },
+            {
+              "key": "server_port",
+              "label": "服务器端口",
+              "kind": "number",
+              "required": true,
+              "min": 1,
+              "max": 65535
+            },
+            {
+              "key": "bypass_domain",
+              "label": "绕过域名",
+              "kind": "string-list"
+            },
+            {
+              "key": "match_domain",
+              "label": "匹配域名",
+              "kind": "string-list"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

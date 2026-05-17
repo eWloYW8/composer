@@ -1,0 +1,52 @@
+{
+  "type": "anytls",
+  "label": "AnyTLS",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "padding_scheme",
+      "label": "Padding scheme",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    }
+  ]
+}

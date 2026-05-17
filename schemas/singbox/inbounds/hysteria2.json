@@ -1,0 +1,243 @@
+{
+  "type": "hysteria2",
+  "label": "Hysteria2",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "up_mbps",
+      "label": "上行 Mbps",
+      "kind": "number",
+      "min": 0
+    },
+    {
+      "key": "down_mbps",
+      "label": "下行 Mbps",
+      "kind": "number",
+      "min": 0
+    },
+    {
+      "key": "obfs",
+      "label": "Obfs",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "type",
+          "label": "类型",
+          "kind": "select",
+          "required": true,
+          "options": ["salamander"],
+          "defaultValue": "salamander"
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "ignore_client_bandwidth",
+      "label": "忽略客户端带宽",
+      "kind": "boolean"
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    },
+    {
+      "key": "_quic",
+      "label": "QUIC 字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/quic.json"
+    },
+    {
+      "key": "masquerade",
+      "label": "Masquerade",
+      "kind": "string-or-object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "type",
+          "label": "类型",
+          "kind": "select",
+          "required": true,
+          "options": ["file", "proxy", "string"],
+          "defaultValue": "string"
+        },
+        {
+          "key": "directory",
+          "label": "目录",
+          "kind": "string",
+          "required": true,
+          "visibleWhen": [
+            {
+              "key": "type",
+              "op": "one-of",
+              "values": ["file"]
+            }
+          ]
+        },
+        {
+          "key": "url",
+          "label": "URL",
+          "kind": "string",
+          "required": true,
+          "visibleWhen": [
+            {
+              "key": "type",
+              "op": "one-of",
+              "values": ["proxy"]
+            }
+          ]
+        },
+        {
+          "key": "rewrite_host",
+          "label": "重写 Host",
+          "kind": "boolean",
+          "visibleWhen": [
+            {
+              "key": "type",
+              "op": "one-of",
+              "values": ["proxy"]
+            }
+          ]
+        },
+        {
+          "key": "status_code",
+          "label": "状态码",
+          "kind": "number",
+          "min": 100,
+          "max": 599,
+          "visibleWhen": [
+            {
+              "key": "type",
+              "op": "one-of",
+              "values": ["string"]
+            }
+          ]
+        },
+        {
+          "key": "headers",
+          "label": "Headers",
+          "kind": "map",
+          "wide": true,
+          "visibleWhen": [
+            {
+              "key": "type",
+              "op": "one-of",
+              "values": ["string"]
+            }
+          ]
+        },
+        {
+          "key": "content",
+          "label": "Content",
+          "kind": "string",
+          "required": true,
+          "wide": true,
+          "visibleWhen": [
+            {
+              "key": "type",
+              "op": "one-of",
+              "values": ["string"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bbr_profile",
+      "label": "BBR profile",
+      "kind": "select",
+      "options": ["", "conservative", "standard", "aggressive"]
+    },
+    {
+      "key": "brutal_debug",
+      "label": "Brutal debug",
+      "kind": "boolean"
+    },
+    {
+      "key": "realm",
+      "label": "Hysteria Realm",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "server_url",
+          "label": "Server URL",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "token",
+          "label": "Token",
+          "kind": "string"
+        },
+        {
+          "key": "realm_id",
+          "label": "Realm ID",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "stun_servers",
+          "label": "STUN servers",
+          "kind": "string-list",
+          "required": true
+        },
+        {
+          "key": "stun_domain_resolver",
+          "label": "STUN domain resolver",
+          "kind": "string-or-object",
+          "wide": true,
+          "ref": "shared/dns-route-options.json"
+        },
+        {
+          "key": "http_client",
+          "label": "HTTP client",
+          "kind": "string-or-object",
+          "wide": true,
+          "ref": "shared/http-client.json"
+        }
+      ]
+    }
+  ]
+}

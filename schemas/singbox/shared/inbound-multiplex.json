@@ -1,0 +1,39 @@
+[
+  {
+    "key": "enabled",
+    "label": "启用多路复用",
+    "kind": "boolean",
+    "defaultValue": true
+  },
+  {
+    "key": "padding",
+    "label": "Padding",
+    "kind": "boolean"
+  },
+  {
+    "key": "brutal",
+    "label": "TCP Brutal",
+    "kind": "object",
+    "wide": true,
+    "fields": [
+      {
+        "key": "enabled",
+        "label": "启用 Brutal",
+        "kind": "boolean",
+        "defaultValue": true
+      },
+      {
+        "key": "up_mbps",
+        "label": "上行 Mbps",
+        "kind": "number",
+        "min": 0
+      },
+      {
+        "key": "down_mbps",
+        "label": "下行 Mbps",
+        "kind": "number",
+        "min": 0
+      }
+    ]
+  }
+]

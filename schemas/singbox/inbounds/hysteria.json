@@ -1,0 +1,120 @@
+{
+  "type": "hysteria",
+  "label": "Hysteria",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "up",
+      "label": "上行带宽",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "up_mbps",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "up_mbps",
+      "label": "上行 Mbps",
+      "kind": "number",
+      "min": 0,
+      "visibleWhen": [
+        {
+          "key": "up",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "down",
+      "label": "下行带宽",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "down_mbps",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "down_mbps",
+      "label": "下行 Mbps",
+      "kind": "number",
+      "min": 0,
+      "visibleWhen": [
+        {
+          "key": "down",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "obfs",
+      "label": "Obfs",
+      "kind": "string"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "auth",
+          "label": "Auth",
+          "kind": "string",
+          "visibleWhen": [
+            {
+              "key": "auth_str",
+              "op": "empty"
+            }
+          ]
+        },
+        {
+          "key": "auth_str",
+          "label": "Auth string",
+          "kind": "string",
+          "visibleWhen": [
+            {
+              "key": "auth",
+              "op": "empty"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    },
+    {
+      "key": "_quic",
+      "label": "QUIC 字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/quic.json"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "type": "resolved",
+  "label": "Resolved",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "service",
+      "label": "Service",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "accept_default_resolvers",
+      "label": "接受默认解析器",
+      "kind": "boolean"
+    }
+  ]
+}

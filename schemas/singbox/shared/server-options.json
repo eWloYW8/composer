@@ -1,0 +1,16 @@
+[
+  {
+    "key": "server",
+    "label": "服务器地址",
+    "kind": "string",
+    "required": true
+  },
+  {
+    "key": "server_port",
+    "label": "服务器端口",
+    "kind": "number",
+    "required": true,
+    "min": 1,
+    "max": 65535
+  }
+]

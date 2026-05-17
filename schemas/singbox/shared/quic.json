@@ -1,0 +1,20 @@
+[
+  {
+    "key": "_http2",
+    "label": "HTTP2 字段",
+    "kind": "object",
+    "flatten": true,
+    "ref": "shared/http2.json"
+  },
+  {
+    "key": "initial_packet_size",
+    "label": "initial_packet_size",
+    "kind": "number",
+    "min": 0
+  },
+  {
+    "key": "disable_path_mtu_discovery",
+    "label": "禁用路径 MTU 发现",
+    "kind": "boolean"
+  }
+]

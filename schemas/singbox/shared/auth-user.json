@@ -1,0 +1,14 @@
+[
+  {
+    "key": "username",
+    "label": "用户名",
+    "kind": "string",
+    "required": true
+  },
+  {
+    "key": "password",
+    "label": "密码",
+    "kind": "string",
+    "required": true
+  }
+]

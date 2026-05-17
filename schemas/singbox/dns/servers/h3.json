@@ -1,0 +1,61 @@
+{
+  "type": "h3",
+  "label": "HTTP/3",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "server",
+      "label": "服务器地址",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "server_port",
+      "label": "服务器端口",
+      "kind": "number",
+      "min": 1,
+      "max": 65535,
+      "defaultValue": 443
+    },
+    {
+      "key": "path",
+      "label": "请求路径",
+      "kind": "string",
+      "placeholder": "/dns-query"
+    },
+    {
+      "key": "method",
+      "label": "HTTP 方法",
+      "kind": "string"
+    },
+    {
+      "key": "headers",
+      "label": "HTTP headers",
+      "kind": "map",
+      "wide": true
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "defaultValue": {
+        "enabled": true
+      },
+      "ref": "shared/tls-outbound.json"
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

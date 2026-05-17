@@ -1,0 +1,285 @@
+[
+  {
+    "key": "inbound",
+    "label": "入站",
+    "kind": "string-list"
+  },
+  {
+    "key": "ip_version",
+    "label": "IP 版本",
+    "kind": "select",
+    "valueType": "number",
+    "options": ["", "4", "6"]
+  },
+  {
+    "key": "query_type",
+    "label": "查询类型",
+    "kind": "json",
+    "wide": true,
+    "placeholder": "[\"A\", \"AAAA\", 32768]"
+  },
+  {
+    "key": "network",
+    "label": "网络",
+    "kind": "select",
+    "options": ["", "tcp", "udp"]
+  },
+  {
+    "key": "auth_user",
+    "label": "认证用户",
+    "kind": "string-list"
+  },
+  {
+    "key": "protocol",
+    "label": "协议",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain",
+    "label": "完整域名",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain_suffix",
+    "label": "域名后缀",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain_keyword",
+    "label": "域名关键词",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain_regex",
+    "label": "域名正则",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_ip_cidr",
+    "label": "来源 CIDR",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_ip_is_private",
+    "label": "私有来源 IP",
+    "kind": "boolean"
+  },
+  {
+    "key": "source_port",
+    "label": "来源端口",
+    "kind": "number-list",
+    "min": 0,
+    "max": 65535
+  },
+  {
+    "key": "source_port_range",
+    "label": "来源端口范围",
+    "kind": "string-list"
+  },
+  {
+    "key": "port",
+    "label": "目标端口",
+    "kind": "number-list",
+    "min": 0,
+    "max": 65535
+  },
+  {
+    "key": "port_range",
+    "label": "目标端口范围",
+    "kind": "string-list"
+  },
+  {
+    "key": "process_name",
+    "label": "进程名",
+    "kind": "string-list"
+  },
+  {
+    "key": "process_path",
+    "label": "进程路径",
+    "kind": "string-list"
+  },
+  {
+    "key": "process_path_regex",
+    "label": "进程路径正则",
+    "kind": "string-list"
+  },
+  {
+    "key": "package_name",
+    "label": "包名",
+    "kind": "string-list"
+  },
+  {
+    "key": "package_name_regex",
+    "label": "包名正则",
+    "kind": "string-list"
+  },
+  {
+    "key": "user",
+    "label": "用户",
+    "kind": "string-list"
+  },
+  {
+    "key": "user_id",
+    "label": "用户 ID",
+    "kind": "number-list"
+  },
+  {
+    "key": "outbound",
+    "label": "匹配出站",
+    "kind": "string-list"
+  },
+  {
+    "key": "clash_mode",
+    "label": "Clash mode",
+    "kind": "string"
+  },
+  {
+    "key": "network_type",
+    "label": "网络类型",
+    "kind": "string-list",
+    "allowedValues": ["wifi", "cellular", "ethernet", "other"]
+  },
+  {
+    "key": "network_is_expensive",
+    "label": "网络计费",
+    "kind": "boolean"
+  },
+  {
+    "key": "network_is_constrained",
+    "label": "低数据模式",
+    "kind": "boolean"
+  },
+  {
+    "key": "interface_address",
+    "label": "接口地址",
+    "kind": "map",
+    "wide": true
+  },
+  {
+    "key": "network_interface_address",
+    "label": "网络接口地址",
+    "kind": "map",
+    "wide": true
+  },
+  {
+    "key": "default_interface_address",
+    "label": "默认接口地址",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_mac_address",
+    "label": "来源 MAC",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_hostname",
+    "label": "来源主机名",
+    "kind": "string-list"
+  },
+  {
+    "key": "preferred_by",
+    "label": "Preferred by",
+    "kind": "string-list"
+  },
+  {
+    "key": "wifi_ssid",
+    "label": "WiFi SSID",
+    "kind": "string-list"
+  },
+  {
+    "key": "wifi_bssid",
+    "label": "WiFi BSSID",
+    "kind": "string-list"
+  },
+  {
+    "key": "rule_set",
+    "label": "规则集",
+    "kind": "string-list"
+  },
+  {
+    "key": "rule_set_ip_cidr_match_source",
+    "label": "规则集 CIDR 匹配来源",
+    "kind": "boolean"
+  },
+  {
+    "key": "match_response",
+    "label": "匹配响应",
+    "kind": "boolean"
+  },
+  {
+    "key": "ip_cidr",
+    "label": "响应 CIDR",
+    "kind": "string-list"
+  },
+  {
+    "key": "ip_is_private",
+    "label": "私有响应 IP",
+    "kind": "boolean"
+  },
+  {
+    "key": "ip_accept_any",
+    "label": "接受任意响应 IP",
+    "kind": "boolean"
+  },
+  {
+    "key": "response_rcode",
+    "label": "响应 RCODE",
+    "kind": "select",
+    "options": [
+      "",
+      "NOERROR",
+      "FORMERR",
+      "SERVFAIL",
+      "NXDOMAIN",
+      "NOTIMP",
+      "REFUSED"
+    ],
+    "visibleWhen": [
+      {
+        "key": "match_response",
+        "op": "present"
+      }
+    ]
+  },
+  {
+    "key": "response_answer",
+    "label": "响应 Answer",
+    "kind": "string-list",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "match_response",
+        "op": "present"
+      }
+    ]
+  },
+  {
+    "key": "response_ns",
+    "label": "响应 NS",
+    "kind": "string-list",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "match_response",
+        "op": "present"
+      }
+    ]
+  },
+  {
+    "key": "response_extra",
+    "label": "响应 Extra",
+    "kind": "string-list",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "match_response",
+        "op": "present"
+      }
+    ]
+  },
+  {
+    "key": "invert",
+    "label": "反选",
+    "kind": "boolean"
+  }
+]

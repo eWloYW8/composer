@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --composer-sticky-top: 0px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: hsl(45 20% 98%);
+  color: hsl(220 18% 14%);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

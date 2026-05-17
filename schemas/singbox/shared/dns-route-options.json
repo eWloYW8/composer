@@ -1,0 +1,40 @@
+[
+  {
+    "key": "server",
+    "label": "DNS 服务器",
+    "kind": "string",
+    "required": true
+  },
+  {
+    "key": "timeout",
+    "label": "超时",
+    "kind": "string"
+  },
+  {
+    "key": "strategy",
+    "label": "域名策略",
+    "kind": "select",
+    "options": ["", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"]
+  },
+  {
+    "key": "disable_cache",
+    "label": "禁用缓存",
+    "kind": "boolean"
+  },
+  {
+    "key": "disable_optimistic_cache",
+    "label": "禁用乐观缓存",
+    "kind": "boolean"
+  },
+  {
+    "key": "rewrite_ttl",
+    "label": "重写 TTL",
+    "kind": "number",
+    "min": 0
+  },
+  {
+    "key": "client_subnet",
+    "label": "Client subnet",
+    "kind": "string"
+  }
+]

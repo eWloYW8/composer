@@ -1,0 +1,82 @@
+{
+  "type": "tuic",
+  "label": "TUIC",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "uuid",
+          "label": "UUID",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ]
+    },
+    {
+      "key": "congestion_control",
+      "label": "拥塞控制",
+      "kind": "select",
+      "options": ["", "cubic", "new_reno", "bbr"]
+    },
+    {
+      "key": "auth_timeout",
+      "label": "认证超时",
+      "kind": "string",
+      "placeholder": "3s"
+    },
+    {
+      "key": "zero_rtt_handshake",
+      "label": "0-RTT 握手",
+      "kind": "boolean"
+    },
+    {
+      "key": "heartbeat",
+      "label": "心跳间隔",
+      "kind": "string",
+      "placeholder": "10s"
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    },
+    {
+      "key": "_quic",
+      "label": "QUIC 字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/quic.json"
+    }
+  ]
+}

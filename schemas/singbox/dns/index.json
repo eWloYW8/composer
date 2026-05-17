@@ -1,0 +1,173 @@
+{
+  "options": {
+    "fields": [
+      {
+        "key": "final",
+        "label": "默认 DNS 服务器",
+        "kind": "string"
+      },
+      {
+        "key": "strategy",
+        "label": "默认解析策略",
+        "kind": "select",
+        "options": ["", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"]
+      },
+      {
+        "key": "disable_cache",
+        "label": "禁用缓存",
+        "kind": "boolean",
+        "visibleWhen": [
+          {
+            "key": "optimistic",
+            "op": "empty"
+          }
+        ]
+      },
+      {
+        "key": "disable_expire",
+        "label": "禁用缓存过期",
+        "kind": "boolean",
+        "visibleWhen": [
+          {
+            "key": "optimistic",
+            "op": "empty"
+          }
+        ]
+      },
+      {
+        "key": "independent_cache",
+        "label": "独立缓存",
+        "kind": "boolean"
+      },
+      {
+        "key": "cache_capacity",
+        "label": "缓存容量",
+        "kind": "number",
+        "min": 0
+      },
+      {
+        "key": "optimistic",
+        "label": "乐观缓存",
+        "kind": "boolean-or-object",
+        "wide": true,
+        "fields": [
+          {
+            "key": "enabled",
+            "label": "启用乐观缓存",
+            "kind": "boolean",
+            "defaultValue": true
+          },
+          {
+            "key": "timeout",
+            "label": "乐观缓存超时",
+            "kind": "string",
+            "placeholder": "3d"
+          }
+        ],
+        "visibleWhen": [
+          {
+            "key": "disable_cache",
+            "op": "empty"
+          },
+          {
+            "key": "disable_expire",
+            "op": "empty"
+          }
+        ]
+      },
+      {
+        "key": "timeout",
+        "label": "默认查询超时",
+        "kind": "string",
+        "placeholder": "10s"
+      },
+      {
+        "key": "reverse_mapping",
+        "label": "反向映射",
+        "kind": "boolean"
+      },
+      {
+        "key": "client_subnet",
+        "label": "Client subnet",
+        "kind": "string"
+      }
+    ]
+  },
+  "default_server_type": "udp",
+  "server_type_options": [
+    {
+      "value": "local",
+      "label": "Local"
+    },
+    {
+      "value": "hosts",
+      "label": "Hosts"
+    },
+    {
+      "value": "udp",
+      "label": "UDP"
+    },
+    {
+      "value": "tcp",
+      "label": "TCP"
+    },
+    {
+      "value": "tls",
+      "label": "TLS"
+    },
+    {
+      "value": "quic",
+      "label": "QUIC"
+    },
+    {
+      "value": "https",
+      "label": "HTTPS"
+    },
+    {
+      "value": "h3",
+      "label": "HTTP/3"
+    },
+    {
+      "value": "dhcp",
+      "label": "DHCP"
+    },
+    {
+      "value": "mdns",
+      "label": "mDNS"
+    },
+    {
+      "value": "fakeip",
+      "label": "FakeIP"
+    },
+    {
+      "value": "tailscale",
+      "label": "Tailscale"
+    },
+    {
+      "value": "resolved",
+      "label": "Resolved"
+    }
+  ],
+  "default_rule_type": "default",
+  "rule_type_options": [
+    {
+      "value": "default",
+      "label": "Default"
+    },
+    {
+      "value": "logical",
+      "label": "Logical"
+    }
+  ],
+  "default_nested_rule_type": "default",
+  "nested_rule_type_options": [
+    {
+      "value": "default",
+      "label": "Default"
+    },
+    {
+      "value": "logical",
+      "label": "Logical"
+    }
+  ]
+}

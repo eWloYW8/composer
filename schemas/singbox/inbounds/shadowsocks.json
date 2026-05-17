@@ -1,0 +1,145 @@
+{
+  "type": "shadowsocks",
+  "label": "Shadowsocks",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "network",
+      "label": "网络",
+      "kind": "select",
+      "options": ["", "tcp", "udp"]
+    },
+    {
+      "key": "method",
+      "label": "加密方法",
+      "kind": "select",
+      "required": true,
+      "options": [
+        "2022-blake3-aes-128-gcm",
+        "2022-blake3-aes-256-gcm",
+        "2022-blake3-chacha20-poly1305",
+        "none",
+        "aes-128-gcm",
+        "aes-192-gcm",
+        "aes-256-gcm",
+        "chacha20-ietf-poly1305",
+        "xchacha20-ietf-poly1305"
+      ],
+      "defaultValue": "aes-128-gcm"
+    },
+    {
+      "key": "password",
+      "label": "密码",
+      "kind": "string",
+      "required": true,
+      "visibleWhen": [
+        {
+          "key": "users",
+          "op": "empty"
+        },
+        {
+          "key": "destinations",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ],
+      "visibleWhen": [
+        {
+          "key": "password",
+          "op": "empty"
+        },
+        {
+          "key": "destinations",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "destinations",
+      "label": "中转目标",
+      "kind": "object-list",
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "server",
+          "label": "服务器地址",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "server_port",
+          "label": "服务器端口",
+          "kind": "number",
+          "required": true,
+          "min": 1,
+          "max": 65535
+        }
+      ],
+      "visibleWhen": [
+        {
+          "key": "password",
+          "op": "empty"
+        },
+        {
+          "key": "users",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "managed",
+      "label": "SSM API 管理",
+      "kind": "boolean"
+    },
+    {
+      "key": "multiplex",
+      "label": "多路复用",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/inbound-multiplex.json"
+    }
+  ]
+}

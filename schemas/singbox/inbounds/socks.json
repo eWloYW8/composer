@@ -1,0 +1,33 @@
+{
+  "type": "socks",
+  "label": "SOCKS",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "wide": true,
+      "ref": "shared/auth-user.json"
+    },
+    {
+      "key": "domain_resolver",
+      "label": "Domain resolver",
+      "kind": "string-or-object",
+      "wide": true,
+      "ref": "shared/dns-route-options.json"
+    }
+  ]
+}

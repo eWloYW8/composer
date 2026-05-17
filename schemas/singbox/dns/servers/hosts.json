@@ -1,0 +1,23 @@
+{
+  "type": "hosts",
+  "label": "Hosts",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "path",
+      "label": "Hosts 路径",
+      "kind": "string-list"
+    },
+    {
+      "key": "predefined",
+      "label": "预定义 hosts",
+      "kind": "map",
+      "wide": true
+    }
+  ]
+}

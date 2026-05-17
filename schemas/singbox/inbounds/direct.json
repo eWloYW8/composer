@@ -1,0 +1,37 @@
+{
+  "type": "direct",
+  "label": "Direct",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "network",
+      "label": "网络",
+      "kind": "select",
+      "options": ["", "tcp", "udp"]
+    },
+    {
+      "key": "override_address",
+      "label": "覆盖目标地址",
+      "kind": "string"
+    },
+    {
+      "key": "override_port",
+      "label": "覆盖目标端口",
+      "kind": "number",
+      "min": 1,
+      "max": 65535
+    }
+  ]
+}

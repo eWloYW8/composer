@@ -1,0 +1,35 @@
+{
+  "type": "mdns",
+  "label": "mDNS",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "interface",
+      "label": "网络接口",
+      "kind": "string-list"
+    },
+    {
+      "key": "prefer_go",
+      "label": "Prefer Go",
+      "kind": "boolean"
+    },
+    {
+      "key": "neighbor_domain",
+      "label": "邻居域名后缀",
+      "kind": "string-list"
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

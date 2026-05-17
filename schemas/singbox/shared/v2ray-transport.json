@@ -1,0 +1,132 @@
+[
+  {
+    "key": "type",
+    "label": "传输类型",
+    "kind": "select",
+    "required": true,
+    "options": ["http", "ws", "quic", "grpc", "httpupgrade"],
+    "defaultValue": "ws"
+  },
+  {
+    "key": "host",
+    "label": "Host",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http", "httpupgrade"]
+      }
+    ]
+  },
+  {
+    "key": "path",
+    "label": "Path",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http", "ws", "httpupgrade"]
+      }
+    ]
+  },
+  {
+    "key": "method",
+    "label": "Method",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http"]
+      }
+    ]
+  },
+  {
+    "key": "headers",
+    "label": "Headers",
+    "kind": "map",
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http", "ws", "httpupgrade"]
+      }
+    ]
+  },
+  {
+    "key": "idle_timeout",
+    "label": "idle_timeout",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http", "grpc"]
+      }
+    ]
+  },
+  {
+    "key": "ping_timeout",
+    "label": "ping_timeout",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http", "grpc"]
+      }
+    ]
+  },
+  {
+    "key": "max_early_data",
+    "label": "max_early_data",
+    "kind": "number",
+    "min": 0,
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["ws"]
+      }
+    ]
+  },
+  {
+    "key": "early_data_header_name",
+    "label": "early_data_header_name",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["ws"]
+      }
+    ]
+  },
+  {
+    "key": "service_name",
+    "label": "service_name",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["grpc"]
+      }
+    ]
+  },
+  {
+    "key": "permit_without_stream",
+    "label": "permit_without_stream",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["grpc"]
+      }
+    ]
+  }
+]

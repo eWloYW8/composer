@@ -1,0 +1,24 @@
+{
+  "type": "fakeip",
+  "label": "FakeIP",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "inet4_range",
+      "label": "IPv4 range",
+      "kind": "string",
+      "placeholder": "198.18.0.0/15"
+    },
+    {
+      "key": "inet6_range",
+      "label": "IPv6 range",
+      "kind": "string",
+      "placeholder": "fc00::/18"
+    }
+  ]
+}

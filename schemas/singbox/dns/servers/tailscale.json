@@ -1,0 +1,28 @@
+{
+  "type": "tailscale",
+  "label": "Tailscale",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "endpoint",
+      "label": "Endpoint",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "accept_default_resolvers",
+      "label": "接受默认解析器",
+      "kind": "boolean"
+    },
+    {
+      "key": "accept_search_domain",
+      "label": "接受搜索域",
+      "kind": "boolean"
+    }
+  ]
+}

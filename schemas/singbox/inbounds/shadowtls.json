@@ -1,0 +1,114 @@
+{
+  "type": "shadowtls",
+  "label": "ShadowTLS",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "version",
+      "label": "协议版本",
+      "kind": "select",
+      "valueType": "number",
+      "required": true,
+      "options": ["1", "2", "3"],
+      "defaultValue": 3
+    },
+    {
+      "key": "password",
+      "label": "密码",
+      "kind": "string",
+      "required": true,
+      "visibleWhen": [
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [2]
+        }
+      ]
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "required": true,
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "名称",
+          "kind": "string"
+        },
+        {
+          "key": "password",
+          "label": "密码",
+          "kind": "string",
+          "required": true
+        }
+      ],
+      "visibleWhen": [
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [3]
+        }
+      ]
+    },
+    {
+      "key": "handshake",
+      "label": "Handshake",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/server-dialer.json"
+    },
+    {
+      "key": "handshake_for_server_name",
+      "label": "按 Server Name 握手",
+      "kind": "object-map",
+      "wide": true,
+      "ref": "shared/server-dialer.json",
+      "visibleWhen": [
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [2, 3]
+        }
+      ]
+    },
+    {
+      "key": "strict_mode",
+      "label": "严格模式",
+      "kind": "boolean",
+      "visibleWhen": [
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [3]
+        }
+      ]
+    },
+    {
+      "key": "wildcard_sni",
+      "label": "Wildcard SNI",
+      "kind": "select",
+      "options": ["", "off", "authed", "all"],
+      "visibleWhen": [
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [3]
+        }
+      ]
+    }
+  ]
+}
