@@ -10,6 +10,7 @@
     "key": "initial_packet_size",
     "label": "initial_packet_size",
     "kind": "number",
+    "integer": true,
     "min": 0
   },
   {

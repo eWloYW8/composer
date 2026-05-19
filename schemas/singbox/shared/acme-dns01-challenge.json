@@ -1,0 +1,158 @@
+{
+  "fields": [
+    {
+      "key": "ttl",
+      "label": "TTL",
+      "kind": "string"
+    },
+    {
+      "key": "propagation_delay",
+      "label": "传播延迟",
+      "kind": "string"
+    },
+    {
+      "key": "propagation_timeout",
+      "label": "传播超时",
+      "kind": "string"
+    },
+    {
+      "key": "resolvers",
+      "label": "传播检查 DNS",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "override_domain",
+      "label": "覆盖挑战域名",
+      "kind": "string"
+    },
+    {
+      "key": "provider",
+      "label": "DNS01 提供商",
+      "kind": "select",
+      "required": true,
+      "defaultValue": "cloudflare",
+      "options": ["alidns", "cloudflare", "acmedns"]
+    },
+    {
+      "key": "access_key_id",
+      "label": "Access Key ID",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "alidns"
+        }
+      ]
+    },
+    {
+      "key": "access_key_secret",
+      "label": "Access Key Secret",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "alidns"
+        }
+      ]
+    },
+    {
+      "key": "region_id",
+      "label": "Region ID",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "alidns"
+        }
+      ]
+    },
+    {
+      "key": "security_token",
+      "label": "Security Token",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "alidns"
+        }
+      ]
+    },
+    {
+      "key": "api_token",
+      "label": "API Token",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "cloudflare"
+        }
+      ]
+    },
+    {
+      "key": "zone_token",
+      "label": "Zone Token",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "cloudflare"
+        }
+      ]
+    },
+    {
+      "key": "username",
+      "label": "Username",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "acmedns"
+        }
+      ]
+    },
+    {
+      "key": "password",
+      "label": "Password",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "acmedns"
+        }
+      ]
+    },
+    {
+      "key": "subdomain",
+      "label": "Subdomain",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "acmedns"
+        }
+      ]
+    },
+    {
+      "key": "server_url",
+      "label": "Server URL",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "provider",
+          "op": "equals",
+          "value": "acmedns"
+        }
+      ]
+    }
+  ]
+}

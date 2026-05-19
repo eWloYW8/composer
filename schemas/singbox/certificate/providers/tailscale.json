@@ -1,0 +1,18 @@
+{
+  "type": "tailscale",
+  "label": "Tailscale",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Provider tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "endpoint",
+      "label": "Tailscale endpoint",
+      "kind": "string",
+      "required": true
+    }
+  ]
+}

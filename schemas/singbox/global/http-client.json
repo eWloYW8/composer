@@ -1,0 +1,123 @@
+{
+  "fields": [
+    {
+      "key": "tag",
+      "label": "HTTP client tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "engine",
+      "label": "HTTP 引擎",
+      "kind": "select",
+      "options": ["", "go", "apple"]
+    },
+    {
+      "key": "version",
+      "label": "HTTP 版本",
+      "kind": "select",
+      "valueType": "number",
+      "integer": true,
+      "options": ["", "1", "2", "3"],
+      "visibleWhen": [
+        {
+          "key": "engine",
+          "op": "not-equals",
+          "value": "apple"
+        }
+      ]
+    },
+    {
+      "key": "disable_version_fallback",
+      "label": "禁用版本回退",
+      "kind": "boolean",
+      "visibleWhen": [
+        {
+          "key": "engine",
+          "op": "not-equals",
+          "value": "apple"
+        }
+      ]
+    },
+    {
+      "key": "headers",
+      "label": "Headers",
+      "kind": "map",
+      "valueType": "string-list",
+      "wide": true
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/http-client-tls-apple.json",
+      "visibleWhen": [
+        {
+          "key": "engine",
+          "op": "equals",
+          "value": "apple"
+        }
+      ]
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-outbound.json",
+      "visibleWhen": [
+        {
+          "key": "engine",
+          "op": "not-equals",
+          "value": "apple"
+        }
+      ]
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    },
+    {
+      "key": "_http2",
+      "label": "HTTP2 字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/http2.json",
+      "visibleWhen": [
+        {
+          "key": "engine",
+          "op": "not-equals",
+          "value": "apple"
+        },
+        {
+          "key": "version",
+          "op": "not-one-of",
+          "values": [1, 3]
+        }
+      ]
+    },
+    {
+      "key": "_http3",
+      "label": "HTTP3 字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/quic.json",
+      "visibleWhen": [
+        {
+          "key": "engine",
+          "op": "not-equals",
+          "value": "apple"
+        },
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [3]
+        }
+      ]
+    }
+  ]
+}

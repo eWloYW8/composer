@@ -19,6 +19,7 @@
       "key": "ha_connections",
       "label": "HA connections",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
@@ -37,6 +38,7 @@
       "label": "Edge IP version",
       "kind": "select",
       "valueType": "number",
+      "integer": true,
       "options": ["", "0", "4", "6"]
     },
     {

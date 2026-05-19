@@ -1,0 +1,138 @@
+{
+  "type": "tailscale",
+  "label": "Tailscale",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "state_directory",
+      "label": "状态目录",
+      "kind": "string"
+    },
+    {
+      "key": "auth_key",
+      "label": "Auth key",
+      "kind": "string",
+      "wide": true
+    },
+    {
+      "key": "control_url",
+      "label": "Control URL",
+      "kind": "string"
+    },
+    {
+      "key": "control_http_client",
+      "label": "Control HTTP client",
+      "kind": "string-or-object",
+      "wide": true,
+      "ref": "shared/http-client.json"
+    },
+    {
+      "key": "ephemeral",
+      "label": "Ephemeral",
+      "kind": "boolean"
+    },
+    {
+      "key": "hostname",
+      "label": "Hostname",
+      "kind": "string"
+    },
+    {
+      "key": "accept_routes",
+      "label": "接受路由",
+      "kind": "boolean"
+    },
+    {
+      "key": "exit_node",
+      "label": "Exit node",
+      "kind": "string"
+    },
+    {
+      "key": "exit_node_allow_lan_access",
+      "label": "Exit node 允许 LAN",
+      "kind": "boolean",
+      "visibleWhen": [
+        {
+          "key": "exit_node",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "advertise_routes",
+      "label": "通告路由",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "advertise_exit_node",
+      "label": "通告 Exit node",
+      "kind": "boolean"
+    },
+    {
+      "key": "advertise_tags",
+      "label": "通告 tags",
+      "kind": "string-list"
+    },
+    {
+      "key": "relay_server_port",
+      "label": "Relay server port",
+      "kind": "number",
+      "integer": true,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "key": "relay_server_static_endpoints",
+      "label": "Relay static endpoints",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "system_interface",
+      "label": "系统接口",
+      "kind": "boolean"
+    },
+    {
+      "key": "system_interface_name",
+      "label": "系统接口名称",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "system_interface",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "system_interface_mtu",
+      "label": "系统接口 MTU",
+      "kind": "number",
+      "integer": true,
+      "min": 0,
+      "visibleWhen": [
+        {
+          "key": "system_interface",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "udp_timeout",
+      "label": "UDP 超时",
+      "kind": "string-or-number"
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

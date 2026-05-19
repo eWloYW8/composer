@@ -1,0 +1,19 @@
+{
+  "type": "resolved",
+  "label": "Resolved",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Service tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    }
+  ]
+}

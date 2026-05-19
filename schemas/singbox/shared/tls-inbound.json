@@ -11,9 +11,70 @@
     "kind": "string"
   },
   {
+    "key": "_certificate_required",
+    "label": "启用 TLS 时需要证书或证书路径，除非使用证书提供器或 insecure 自签",
+    "kind": "constraint",
+    "requiresAny": ["certificate", "certificate_path"],
+    "visibleWhen": [
+      {
+        "key": "enabled",
+        "op": "present"
+      },
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "insecure",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
+  },
+  {
+    "key": "_key_required",
+    "label": "启用 TLS 时需要私钥或私钥路径，除非使用证书提供器或 insecure 自签",
+    "kind": "constraint",
+    "requiresAny": ["key", "key_path"],
+    "visibleWhen": [
+      {
+        "key": "enabled",
+        "op": "present"
+      },
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "insecure",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
+  },
+  {
     "key": "insecure",
-    "label": "跳过证书验证",
-    "kind": "boolean"
+    "label": "无证书时生成自签证书",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "alpn",
@@ -35,57 +96,197 @@
   {
     "key": "cipher_suites",
     "label": "Cipher suites",
-    "kind": "string-list"
+    "kind": "string-list",
+    "allowedValues": [
+      "TLS_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+    ]
   },
   {
     "key": "curve_preferences",
     "label": "Curve preferences",
     "kind": "string-list",
-    "allowedValues": ["P256", "P384", "P521", "X25519", "X25519MLKEM768"]
+    "allowedValues": ["P256", "P384", "P521", "X25519", "X25519MLKEM768"],
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "certificate",
     "label": "证书",
     "kind": "string-list",
-    "wide": true
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "certificate_path",
     "label": "证书路径",
-    "kind": "string"
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "client_authentication",
     "label": "客户端认证",
     "kind": "select",
-    "options": ["", "no", "request", "require-any", "verify-if-given", "require-and-verify"]
+    "options": ["", "no", "request", "require-any", "verify-if-given", "require-and-verify"],
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
+  },
+  {
+    "key": "_client_authentication_material_required",
+    "label": "客户端认证 verify 模式需要客户端证书、证书路径或公钥 SHA256",
+    "kind": "constraint",
+    "requiresAny": [
+      "client_certificate",
+      "client_certificate_path",
+      "client_certificate_public_key_sha256"
+    ],
+    "visibleWhen": [
+      {
+        "key": "enabled",
+        "op": "present"
+      },
+      {
+        "key": "client_authentication",
+        "op": "one-of",
+        "values": ["verify-if-given", "require-and-verify"]
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "client_certificate",
     "label": "客户端证书",
     "kind": "string-list",
-    "wide": true
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "client_certificate_public_key_sha256",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "client_certificate_path",
     "label": "客户端证书路径",
-    "kind": "string-list"
+    "kind": "string-list",
+    "visibleWhen": [
+      {
+        "key": "client_certificate_public_key_sha256",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "client_certificate_public_key_sha256",
     "label": "客户端证书公钥 SHA256",
-    "kind": "string-list"
+    "kind": "string-list",
+    "visibleWhen": [
+      {
+        "key": "client_certificate",
+        "op": "empty"
+      },
+      {
+        "key": "client_certificate_path",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "key",
     "label": "私钥",
     "kind": "string-list",
-    "wide": true
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "key_path",
     "label": "私钥路径",
-    "kind": "string"
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
   },
   {
     "key": "kernel_tx",
@@ -107,6 +308,29 @@
     "label": "证书提供器",
     "kind": "string-or-object",
     "wide": true,
+    "visibleWhen": [
+      {
+        "key": "certificate",
+        "op": "empty"
+      },
+      {
+        "key": "certificate_path",
+        "op": "empty"
+      },
+      {
+        "key": "key",
+        "op": "empty"
+      },
+      {
+        "key": "key_path",
+        "op": "empty"
+      },
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ],
     "fields": [
       {
         "key": "type",
@@ -215,6 +439,7 @@
         "key": "alternative_http_port",
         "label": "替代 HTTP 端口",
         "kind": "number",
+        "integer": true,
         "min": 1,
         "max": 65535,
         "visibleWhen": [
@@ -229,6 +454,7 @@
         "key": "alternative_tls_port",
         "label": "替代 TLS 端口",
         "kind": "number",
+        "integer": true,
         "min": 1,
         "max": 65535,
         "visibleWhen": [
@@ -306,6 +532,7 @@
         "label": "Requested validity",
         "kind": "select",
         "valueType": "number",
+        "integer": true,
         "options": ["", "7", "30", "90", "365", "730", "1095", "5475"],
         "visibleWhen": [
           {
@@ -344,6 +571,99 @@
     ]
   },
   {
+    "key": "acme",
+    "label": "ACME",
+    "kind": "object",
+    "wide": true,
+    "fields": [
+      {
+        "key": "domain",
+        "label": "域名",
+        "kind": "string-list",
+        "wide": true
+      },
+      {
+        "key": "data_directory",
+        "label": "数据目录",
+        "kind": "string"
+      },
+      {
+        "key": "default_server_name",
+        "label": "默认 Server Name",
+        "kind": "string"
+      },
+      {
+        "key": "email",
+        "label": "Email",
+        "kind": "string"
+      },
+      {
+        "key": "provider",
+        "label": "ACME provider",
+        "kind": "string"
+      },
+      {
+        "key": "disable_http_challenge",
+        "label": "禁用 HTTP challenge",
+        "kind": "boolean"
+      },
+      {
+        "key": "disable_tls_alpn_challenge",
+        "label": "禁用 TLS ALPN challenge",
+        "kind": "boolean"
+      },
+      {
+        "key": "alternative_http_port",
+        "label": "替代 HTTP 端口",
+        "kind": "number",
+        "integer": true
+      },
+      {
+        "key": "alternative_tls_port",
+        "label": "替代 TLS 端口",
+        "kind": "number",
+        "integer": true
+      },
+      {
+        "key": "external_account",
+        "label": "External Account Binding",
+        "kind": "object",
+        "wide": true,
+        "fields": [
+          {
+            "key": "key_id",
+            "label": "Key ID",
+            "kind": "string"
+          },
+          {
+            "key": "mac_key",
+            "label": "MAC Key",
+            "kind": "string"
+          }
+        ]
+      },
+      {
+        "key": "dns01_challenge",
+        "label": "DNS01 challenge",
+        "kind": "object",
+        "wide": true,
+        "ref": "shared/acme-dns01-challenge.json"
+      },
+      {
+        "key": "profile",
+        "label": "Profile",
+        "kind": "string"
+      }
+    ],
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      }
+    ]
+  },
+  {
     "key": "ech",
     "label": "ECH",
     "kind": "object",
@@ -356,6 +676,18 @@
         "defaultValue": true
       },
       {
+        "key": "_ech_key_required",
+        "label": "启用 ECH 时需要 ECH key 或 key path",
+        "kind": "constraint",
+        "requiresAny": ["key", "key_path"],
+        "visibleWhen": [
+          {
+            "key": "enabled",
+            "op": "present"
+          }
+        ]
+      },
+      {
         "key": "key",
         "label": "ECH key",
         "kind": "string-list"
@@ -364,6 +696,23 @@
         "key": "key_path",
         "label": "ECH key path",
         "kind": "string"
+      },
+      {
+        "key": "pq_signature_schemes_enabled",
+        "label": "PQ signature schemes enabled",
+        "kind": "boolean"
+      },
+      {
+        "key": "dynamic_record_sizing_disabled",
+        "label": "Dynamic record sizing disabled",
+        "kind": "boolean"
+      }
+    ],
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
       }
     ]
   },
@@ -378,6 +727,42 @@
         "label": "启用 Reality",
         "kind": "boolean",
         "defaultValue": true
+      },
+      {
+        "key": "_reality_handshake_server_required",
+        "label": "启用 Reality 时需要 handshake.server",
+        "kind": "constraint",
+        "requiresAny": ["handshake.server"],
+        "visibleWhen": [
+          {
+            "key": "enabled",
+            "op": "present"
+          }
+        ]
+      },
+      {
+        "key": "_reality_handshake_port_required",
+        "label": "启用 Reality 时需要 handshake.server_port",
+        "kind": "constraint",
+        "requiresAny": ["handshake.server_port"],
+        "visibleWhen": [
+          {
+            "key": "enabled",
+            "op": "present"
+          }
+        ]
+      },
+      {
+        "key": "_reality_private_key_required",
+        "label": "启用 Reality 时需要 private_key",
+        "kind": "constraint",
+        "requiresAny": ["private_key"],
+        "visibleWhen": [
+          {
+            "key": "enabled",
+            "op": "present"
+          }
+        ]
       },
       {
         "key": "handshake",
@@ -401,6 +786,37 @@
         "label": "最大时间差",
         "kind": "string",
         "placeholder": "1m"
+      }
+    ],
+    "visibleWhen": [
+      {
+        "key": "ech.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
+        "key": "certificate_provider",
+        "op": "empty"
+      },
+      {
+        "key": "certificate",
+        "op": "empty"
+      },
+      {
+        "key": "certificate_path",
+        "op": "empty"
+      },
+      {
+        "key": "key",
+        "op": "empty"
+      },
+      {
+        "key": "key_path",
+        "op": "empty"
+      },
+      {
+        "key": "curve_preferences",
+        "op": "empty"
       }
     ]
   }

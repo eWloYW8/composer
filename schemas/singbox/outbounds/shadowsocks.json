@@ -18,6 +18,7 @@
       "key": "server_port",
       "label": "服务器端口",
       "kind": "number",
+      "integer": true,
       "required": true,
       "min": 1,
       "max": 65535,
@@ -59,7 +60,8 @@
     {
       "key": "plugin",
       "label": "Plugin",
-      "kind": "string"
+      "kind": "select",
+      "options": ["", "obfs-local", "v2ray-plugin"]
     },
     {
       "key": "plugin_opts",
@@ -69,17 +71,13 @@
     {
       "key": "network",
       "label": "网络",
-      "kind": "select",
-      "options": [
-        "",
-        "tcp",
-        "udp"
-      ]
+      "kind": "string-list",
+      "allowedValues": ["tcp", "udp"]
     },
     {
       "key": "udp_over_tcp",
       "label": "UDP over TCP",
-      "kind": "object",
+      "kind": "boolean-or-object",
       "wide": true,
       "fields": [
         {
@@ -92,6 +90,7 @@
           "key": "version",
           "label": "version",
           "kind": "number",
+          "integer": true,
           "min": 1,
           "max": 2
         }
@@ -133,6 +132,7 @@
           "key": "max_connections",
           "label": "最大连接数",
           "kind": "number",
+          "integer": true,
           "min": 0,
           "visibleWhen": [
             {
@@ -145,6 +145,7 @@
           "key": "min_streams",
           "label": "最小 streams",
           "kind": "number",
+          "integer": true,
           "min": 0,
           "visibleWhen": [
             {
@@ -157,6 +158,7 @@
           "key": "max_streams",
           "label": "最大 streams",
           "kind": "number",
+          "integer": true,
           "min": 0,
           "visibleWhen": [
             {
@@ -189,12 +191,14 @@
               "key": "up_mbps",
               "label": "上行 Mbps",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {
               "key": "down_mbps",
               "label": "下行 Mbps",
               "kind": "number",
+              "integer": true,
               "min": 0
             }
           ]
@@ -295,7 +299,7 @@
         {
           "key": "routing_mark",
           "label": "routing_mark",
-          "kind": "string",
+          "kind": "string-or-number",
           "visibleWhen": [
             {
               "key": "detour",
@@ -447,6 +451,7 @@
               "key": "rewrite_ttl",
               "label": "rewrite_ttl",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {

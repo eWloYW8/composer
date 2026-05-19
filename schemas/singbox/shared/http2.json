@@ -12,17 +12,18 @@
   {
     "key": "stream_receive_window",
     "label": "stream_receive_window",
-    "kind": "string"
+    "kind": "string-or-number"
   },
   {
     "key": "connection_receive_window",
     "label": "connection_receive_window",
-    "kind": "string"
+    "kind": "string-or-number"
   },
   {
     "key": "max_concurrent_streams",
     "label": "max_concurrent_streams",
     "kind": "number",
+    "integer": true,
     "min": 0
   }
 ]

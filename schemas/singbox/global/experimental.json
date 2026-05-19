@@ -1,0 +1,216 @@
+{
+  "fields": [
+    {
+      "key": "cache_file",
+      "label": "Cache file",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "enabled",
+          "label": "启用",
+          "kind": "boolean"
+        },
+        {
+          "key": "path",
+          "label": "路径",
+          "kind": "string"
+        },
+        {
+          "key": "cache_id",
+          "label": "Cache ID",
+          "kind": "string"
+        },
+        {
+          "key": "store_fakeip",
+          "label": "保存 FakeIP",
+          "kind": "boolean"
+        },
+        {
+          "key": "store_rdrc",
+          "label": "保存 rejected DNS response cache",
+          "kind": "boolean"
+        },
+        {
+          "key": "rdrc_timeout",
+          "label": "RDRC 超时",
+          "kind": "string"
+        },
+        {
+          "key": "store_dns",
+          "label": "保存 DNS cache",
+          "kind": "boolean"
+        }
+      ]
+    },
+    {
+      "key": "clash_api",
+      "label": "Clash API",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "external_controller",
+          "label": "External controller",
+          "kind": "string"
+        },
+        {
+          "key": "external_ui",
+          "label": "External UI",
+          "kind": "string"
+        },
+        {
+          "key": "external_ui_download_url",
+          "label": "External UI 下载 URL",
+          "kind": "string"
+        },
+        {
+          "key": "external_ui_download_detour",
+          "label": "External UI 下载 detour",
+          "kind": "string"
+        },
+        {
+          "key": "secret",
+          "label": "Secret",
+          "kind": "string"
+        },
+        {
+          "key": "default_mode",
+          "label": "默认模式",
+          "kind": "string"
+        },
+        {
+          "key": "access_control_allow_origin",
+          "label": "Access-Control-Allow-Origin",
+          "kind": "string-list",
+          "wide": true
+        },
+        {
+          "key": "access_control_allow_private_network",
+          "label": "允许私有网络 CORS",
+          "kind": "boolean"
+        },
+        {
+          "key": "cache_file",
+          "label": "旧版 cache_file",
+          "kind": "string"
+        },
+        {
+          "key": "cache_id",
+          "label": "旧版 cache_id",
+          "kind": "string"
+        },
+        {
+          "key": "store_mode",
+          "label": "旧版保存模式",
+          "kind": "boolean"
+        },
+        {
+          "key": "store_selected",
+          "label": "旧版保存选择",
+          "kind": "boolean"
+        },
+        {
+          "key": "store_fakeip",
+          "label": "旧版保存 FakeIP",
+          "kind": "boolean"
+        }
+      ]
+    },
+    {
+      "key": "v2ray_api",
+      "label": "V2Ray API",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "listen",
+          "label": "Listen",
+          "kind": "string"
+        },
+        {
+          "key": "stats",
+          "label": "Stats",
+          "kind": "object",
+          "wide": true,
+          "fields": [
+            {
+              "key": "enabled",
+              "label": "启用",
+              "kind": "boolean"
+            },
+            {
+              "key": "inbounds",
+              "label": "入站",
+              "kind": "string-list"
+            },
+            {
+              "key": "outbounds",
+              "label": "出站",
+              "kind": "string-list"
+            },
+            {
+              "key": "users",
+              "label": "用户",
+              "kind": "string-list"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "debug",
+      "label": "Debug",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "listen",
+          "label": "Listen",
+          "kind": "string"
+        },
+        {
+          "key": "gc_percent",
+          "label": "GC percent",
+          "kind": "number",
+          "integer": true
+        },
+        {
+          "key": "max_stack",
+          "label": "Max stack",
+          "kind": "number",
+          "integer": true,
+          "min": 0
+        },
+        {
+          "key": "max_threads",
+          "label": "Max threads",
+          "kind": "number",
+          "integer": true,
+          "min": 0
+        },
+        {
+          "key": "panic_on_fault",
+          "label": "Panic on fault",
+          "kind": "boolean"
+        },
+        {
+          "key": "trace_back",
+          "label": "Traceback",
+          "kind": "select",
+          "options": ["", "none", "single", "all", "system", "crash"]
+        },
+        {
+          "key": "memory_limit",
+          "label": "Memory limit",
+          "kind": "string-or-number"
+        },
+        {
+          "key": "oom_killer",
+          "label": "OOM killer",
+          "kind": "boolean"
+        }
+      ]
+    }
+  ]
+}

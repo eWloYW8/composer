@@ -1,0 +1,28 @@
+{
+  "fields": [
+    {
+      "key": "store",
+      "label": "证书存储",
+      "kind": "select",
+      "options": ["", "system", "mozilla", "chrome", "none"]
+    },
+    {
+      "key": "certificate",
+      "label": "信任证书 PEM",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "certificate_path",
+      "label": "信任证书路径",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "certificate_directory_path",
+      "label": "信任证书目录",
+      "kind": "string-list",
+      "wide": true
+    }
+  ]
+}

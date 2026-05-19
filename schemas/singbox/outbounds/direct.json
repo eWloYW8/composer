@@ -1,0 +1,37 @@
+{
+  "type": "direct",
+  "label": "Direct",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "override_address",
+      "label": "override_address",
+      "kind": "string"
+    },
+    {
+      "key": "override_port",
+      "label": "override_port",
+      "kind": "number",
+      "integer": true
+    },
+    {
+      "key": "proxy_protocol",
+      "label": "proxy_protocol",
+      "kind": "number",
+      "integer": true
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

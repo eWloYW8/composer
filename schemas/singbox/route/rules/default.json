@@ -1,0 +1,22 @@
+{
+  "type": "default",
+  "label": "Default",
+  "fields": [
+    {
+      "key": "_match",
+      "label": "匹配字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/route-rule-match.json"
+    },
+    {
+      "key": "_action",
+      "label": "动作字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/route-rule-action.json"
+    }
+  ]
+}

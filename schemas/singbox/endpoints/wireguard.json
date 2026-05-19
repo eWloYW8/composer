@@ -1,0 +1,125 @@
+{
+  "type": "wireguard",
+  "label": "WireGuard",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "system",
+      "label": "使用系统接口",
+      "kind": "boolean"
+    },
+    {
+      "key": "name",
+      "label": "接口名称",
+      "kind": "string"
+    },
+    {
+      "key": "mtu",
+      "label": "MTU",
+      "kind": "number",
+      "integer": true,
+      "min": 0
+    },
+    {
+      "key": "address",
+      "label": "接口地址",
+      "kind": "string-list",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "private_key",
+      "label": "私钥",
+      "kind": "string",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "listen_port",
+      "label": "监听端口",
+      "kind": "number",
+      "integer": true,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "key": "peers",
+      "label": "Peers",
+      "kind": "object-list",
+      "wide": true,
+      "fields": [
+        {
+          "key": "address",
+          "label": "地址",
+          "kind": "string"
+        },
+        {
+          "key": "port",
+          "label": "端口",
+          "kind": "number",
+          "integer": true,
+          "min": 0,
+          "max": 65535
+        },
+        {
+          "key": "public_key",
+          "label": "公钥",
+          "kind": "string",
+          "wide": true
+        },
+        {
+          "key": "pre_shared_key",
+          "label": "预共享密钥",
+          "kind": "string",
+          "wide": true
+        },
+        {
+          "key": "allowed_ips",
+          "label": "允许 IP",
+          "kind": "string-list",
+          "wide": true
+        },
+        {
+          "key": "persistent_keepalive_interval",
+          "label": "Persistent keepalive",
+          "kind": "number",
+          "integer": true,
+          "min": 0,
+          "max": 65535
+        },
+        {
+          "key": "reserved",
+          "label": "Reserved",
+          "kind": "number-list",
+          "integer": true,
+          "min": 0,
+          "max": 255
+        }
+      ]
+    },
+    {
+      "key": "udp_timeout",
+      "label": "UDP 超时",
+      "kind": "string"
+    },
+    {
+      "key": "workers",
+      "label": "Workers",
+      "kind": "number",
+      "integer": true
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号字段",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json"
+    }
+  ]
+}

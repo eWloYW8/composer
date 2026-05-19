@@ -1,0 +1,66 @@
+{
+  "type": "ccm",
+  "label": "CCM",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Service tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "credential_path",
+      "label": "凭证路径",
+      "kind": "string"
+    },
+    {
+      "key": "usages_path",
+      "label": "用量路径",
+      "kind": "string"
+    },
+    {
+      "key": "users",
+      "label": "用户",
+      "kind": "object-list",
+      "wide": true,
+      "fields": [
+        {
+          "key": "name",
+          "label": "Name",
+          "kind": "string"
+        },
+        {
+          "key": "token",
+          "label": "Token",
+          "kind": "string"
+        }
+      ]
+    },
+    {
+      "key": "headers",
+      "label": "Headers",
+      "kind": "map",
+      "valueType": "string-list",
+      "wide": true
+    },
+    {
+      "key": "detour",
+      "label": "Detour",
+      "kind": "string"
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    }
+  ]
+}

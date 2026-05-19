@@ -2,11 +2,25 @@ export type ComposerState = {
   version: number;
   metadata: Metadata;
   base_config: Record<string, unknown>;
+  global: GlobalConfig;
   dns: DnsConfig;
+  route: RouteConfig;
   inbounds: Array<Record<string, unknown>>;
+  endpoints: Array<Record<string, unknown>>;
+  http_clients: Array<Record<string, unknown>>;
+  certificate: Record<string, unknown>;
+  certificate_providers: Array<Record<string, unknown>>;
+  services: Array<Record<string, unknown>>;
+  extra_route_rules: Array<Record<string, unknown>>;
   proxy_sources: ProxySource[];
   proxy_groups: ProxyGroup[];
   target_groups: TargetGroup[];
+};
+
+export type GlobalConfig = {
+  log: Record<string, unknown>;
+  ntp: Record<string, unknown>;
+  experimental: Record<string, unknown>;
 };
 
 export type DnsConfig = {
@@ -14,6 +28,11 @@ export type DnsConfig = {
   options: Record<string, unknown>;
   servers: Array<Record<string, unknown>>;
   rules: Array<Record<string, unknown>>;
+};
+
+export type RouteConfig = {
+  options: Record<string, unknown>;
+  rule_sets: Array<Record<string, unknown>>;
 };
 
 export type Metadata = {
@@ -128,4 +147,23 @@ export type VersionSummary = {
   description: string;
   created_at: string;
   state_updated_at?: string | null;
+};
+
+export type AppSettings = {
+  network: NetworkSettings;
+};
+
+export type NetworkSettings = {
+  proxy: ProxySettings;
+  github: GithubSettings;
+};
+
+export type ProxySettings = {
+  enabled: boolean;
+  url: string;
+};
+
+export type GithubSettings = {
+  api_url: string;
+  token: string;
 };

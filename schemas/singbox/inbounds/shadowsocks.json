@@ -18,8 +18,8 @@
     {
       "key": "network",
       "label": "网络",
-      "kind": "select",
-      "options": ["", "tcp", "udp"]
+      "kind": "string-list",
+      "allowedValues": ["tcp", "udp"]
     },
     {
       "key": "method",
@@ -113,6 +113,7 @@
           "key": "server_port",
           "label": "服务器端口",
           "kind": "number",
+          "integer": true,
           "required": true,
           "min": 1,
           "max": 65535

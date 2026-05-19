@@ -1,7 +1,7 @@
 use axum::{
     Router,
     body::Body,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::{Response, StatusCode, header},
     response::{IntoResponse, Json},
     routing::{delete, get, post},
@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    generator,
-    model::{ComposerState, ComposerVersionSummary},
+    docs, generator,
+    model::{AppSettings, ComposerState, ComposerVersionSummary},
     schema,
     store::AppStore,
     subscription,
@@ -21,6 +21,8 @@ pub fn router(store: AppStore) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/schema", get(get_schema))
+        .route("/schema/path", get(get_schema_path))
+        .route("/settings", get(get_settings).put(put_settings))
         .route("/state", get(get_state).put(put_state))
         .route("/state.yaml", get(get_state_yaml).put(put_state_yaml))
         .route("/resolved", get(get_resolved))
@@ -31,6 +33,14 @@ pub fn router(store: AppStore) -> Router {
         .route("/versions/:id/restore", post(restore_version))
         .route("/sources/refresh", post(refresh_all_sources))
         .route("/sources/:id/refresh", post(refresh_source))
+        .route("/sing-box-docs/status", get(get_sing_box_docs_status))
+        .route("/sing-box-docs/index", get(get_sing_box_docs_index))
+        .route("/sing-box-docs/search", get(search_sing_box_docs))
+        .route("/sing-box-docs/document", get(read_sing_box_doc))
+        .route(
+            "/sing-box-docs/cache/refresh",
+            post(refresh_sing_box_docs_cache),
+        )
         .with_state(store)
 }
 
@@ -46,6 +56,34 @@ async fn get_schema(
     State(store): State<AppStore>,
 ) -> Result<Json<schema::ComposerSchema>, ApiError> {
     Ok(Json(store.schema().await?))
+}
+
+async fn get_schema_path(
+    State(store): State<AppStore>,
+    Query(query): Query<SchemaPathQuery>,
+) -> Result<Json<Value>, ApiError> {
+    let path = query.path.unwrap_or_else(|| "/".to_string());
+    let pointer = if path == "/" { "" } else { path.as_str() };
+    let schema = serde_json::to_value(store.schema().await?)?;
+    let value = schema
+        .pointer(pointer)
+        .ok_or_else(|| ApiError::not_found(format!("schema path {path} not found")))?
+        .clone();
+    Ok(Json(serde_json::json!({
+        "path": path,
+        "value": value
+    })))
+}
+
+async fn get_settings(State(store): State<AppStore>) -> Json<AppSettings> {
+    Json(store.settings().await)
+}
+
+async fn put_settings(
+    State(store): State<AppStore>,
+    Json(settings): Json<AppSettings>,
+) -> Result<Json<AppSettings>, ApiError> {
+    Ok(Json(store.replace_settings(settings).await?))
 }
 
 async fn put_state(
@@ -135,12 +173,13 @@ async fn refresh_source(
     Path(id): Path<String>,
 ) -> Result<Json<RefreshResponse>, ApiError> {
     let mut state = store.get().await;
+    let settings = store.settings().await;
     let source = state
         .proxy_sources
         .iter_mut()
         .find(|source| source.id == id)
         .ok_or_else(|| ApiError::not_found(format!("source {} not found", id)))?;
-    let count = subscription::refresh_source(source).await?;
+    let count = subscription::refresh_source(source, &settings.network).await?;
     let state = store.replace(state).await?;
     Ok(Json(RefreshResponse {
         ok: true,
@@ -153,9 +192,10 @@ async fn refresh_all_sources(
     State(store): State<AppStore>,
 ) -> Result<Json<RefreshResponse>, ApiError> {
     let mut state = store.get().await;
+    let settings = store.settings().await;
     let mut refreshed = Vec::new();
     for source in &mut state.proxy_sources {
-        let count = subscription::refresh_source(source)
+        let count = subscription::refresh_source(source, &settings.network)
             .await
             .map_err(|err| anyhow::anyhow!("{}: {err}", source.name))?;
         refreshed.push(SourceRefreshResult {
@@ -169,6 +209,60 @@ async fn refresh_all_sources(
         refreshed,
         state,
     }))
+}
+
+async fn get_sing_box_docs_status(State(store): State<AppStore>) -> Json<docs::DocsStatus> {
+    Json(store.docs().status().await)
+}
+
+async fn get_sing_box_docs_index(
+    State(store): State<AppStore>,
+) -> Result<Json<docs::DocsIndexResponse>, ApiError> {
+    let settings = store.settings().await;
+    Ok(Json(store.docs().index(&settings.network).await?))
+}
+
+async fn search_sing_box_docs(
+    State(store): State<AppStore>,
+    Query(query): Query<DocSearchQuery>,
+) -> Result<Json<docs::DocSearchResponse>, ApiError> {
+    let settings = store.settings().await;
+    Ok(Json(
+        store
+            .docs()
+            .search(query.q, query.limit.unwrap_or(8), &settings.network)
+            .await?,
+    ))
+}
+
+async fn read_sing_box_doc(
+    State(store): State<AppStore>,
+    Query(query): Query<DocReadQuery>,
+) -> Result<Json<docs::DocReadResponse>, ApiError> {
+    let settings = store.settings().await;
+    Ok(Json(
+        store
+            .docs()
+            .read_document(
+                query.path,
+                query.force_refresh.unwrap_or(false),
+                &settings.network,
+            )
+            .await?,
+    ))
+}
+
+async fn refresh_sing_box_docs_cache(
+    State(store): State<AppStore>,
+    Json(request): Json<docs::DocsRefreshRequest>,
+) -> Result<Json<docs::DocsRefreshResponse>, ApiError> {
+    let settings = store.settings().await;
+    Ok(Json(
+        store
+            .docs()
+            .refresh_cache(request, &settings.network)
+            .await?,
+    ))
 }
 
 fn text_response(content_type: &'static str, content: String) -> Response<Body> {
@@ -196,6 +290,23 @@ struct CreateVersionRequest {
     name: String,
     #[serde(default)]
     description: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SchemaPathQuery {
+    path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DocSearchQuery {
+    q: String,
+    limit: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DocReadQuery {
+    path: String,
+    force_refresh: Option<bool>,
 }
 
 #[derive(Debug)]

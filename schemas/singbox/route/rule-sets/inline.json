@@ -1,0 +1,27 @@
+{
+  "type": "inline",
+  "label": "Inline",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "format",
+      "label": "格式",
+      "kind": "string"
+    },
+    {
+      "key": "rules",
+      "label": "规则",
+      "kind": "typed-list",
+      "required": true,
+      "wide": true,
+      "schemaNamespace": "route.headless_rules",
+      "defaultType": "default",
+      "defaultValue": []
+    }
+  ]
+}

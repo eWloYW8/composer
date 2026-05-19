@@ -1,0 +1,116 @@
+{
+  "type": "acme",
+  "label": "ACME",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Provider tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "domain",
+      "label": "域名",
+      "kind": "string-list",
+      "required": true,
+      "wide": true,
+      "defaultValue": []
+    },
+    {
+      "key": "data_directory",
+      "label": "数据目录",
+      "kind": "string"
+    },
+    {
+      "key": "default_server_name",
+      "label": "默认 Server Name",
+      "kind": "string"
+    },
+    {
+      "key": "email",
+      "label": "Email",
+      "kind": "string"
+    },
+    {
+      "key": "provider",
+      "label": "ACME CA",
+      "kind": "string",
+      "placeholder": "letsencrypt, zerossl or https://..."
+    },
+    {
+      "key": "account_key",
+      "label": "Account key",
+      "kind": "string",
+      "wide": true
+    },
+    {
+      "key": "disable_http_challenge",
+      "label": "禁用 HTTP challenge",
+      "kind": "boolean"
+    },
+    {
+      "key": "disable_tls_alpn_challenge",
+      "label": "禁用 TLS ALPN challenge",
+      "kind": "boolean"
+    },
+    {
+      "key": "alternative_http_port",
+      "label": "替代 HTTP 端口",
+      "kind": "number",
+      "integer": true,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "alternative_tls_port",
+      "label": "替代 TLS 端口",
+      "kind": "number",
+      "integer": true,
+      "min": 1,
+      "max": 65535
+    },
+    {
+      "key": "external_account",
+      "label": "External Account Binding",
+      "kind": "object",
+      "wide": true,
+      "fields": [
+        {
+          "key": "key_id",
+          "label": "Key ID",
+          "kind": "string"
+        },
+        {
+          "key": "mac_key",
+          "label": "MAC Key",
+          "kind": "string"
+        }
+      ]
+    },
+    {
+      "key": "dns01_challenge",
+      "label": "DNS01 challenge",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/acme-dns01-challenge.json"
+    },
+    {
+      "key": "key_type",
+      "label": "Key type",
+      "kind": "select",
+      "options": ["", "ed25519", "p256", "p384", "rsa2048", "rsa4096"]
+    },
+    {
+      "key": "profile",
+      "label": "Profile",
+      "kind": "string"
+    },
+    {
+      "key": "http_client",
+      "label": "HTTP client",
+      "kind": "string-or-object",
+      "wide": true,
+      "ref": "shared/http-client.json"
+    }
+  ]
+}

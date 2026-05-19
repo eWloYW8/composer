@@ -18,6 +18,7 @@
       "key": "server_port",
       "label": "服务器端口",
       "kind": "number",
+      "integer": true,
       "required": true,
       "min": 1,
       "max": 65535,
@@ -164,7 +165,7 @@
         {
           "key": "routing_mark",
           "label": "routing_mark",
-          "kind": "string",
+          "kind": "string-or-number",
           "visibleWhen": [
             {
               "key": "detour",
@@ -316,6 +317,7 @@
               "key": "rewrite_ttl",
               "label": "rewrite_ttl",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {

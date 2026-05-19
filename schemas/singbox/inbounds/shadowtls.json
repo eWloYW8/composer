@@ -20,9 +20,8 @@
       "label": "协议版本",
       "kind": "select",
       "valueType": "number",
-      "required": true,
-      "options": ["1", "2", "3"],
-      "defaultValue": 3
+      "integer": true,
+      "options": ["", "1", "2", "3"]
     },
     {
       "key": "password",
@@ -69,7 +68,35 @@
       "label": "Handshake",
       "kind": "object",
       "wide": true,
-      "ref": "shared/server-dialer.json"
+      "required": true,
+      "ref": "shared/server-dialer.json",
+      "visibleWhen": [
+        {
+          "key": "wildcard_sni",
+          "op": "not-equals",
+          "value": "all"
+        }
+      ]
+    },
+    {
+      "key": "handshake",
+      "label": "Handshake",
+      "kind": "object",
+      "wide": true,
+      "required": true,
+      "ref": "shared/server-dialer-optional-server.json",
+      "visibleWhen": [
+        {
+          "key": "version",
+          "op": "one-of",
+          "values": [3]
+        },
+        {
+          "key": "wildcard_sni",
+          "op": "equals",
+          "value": "all"
+        }
+      ]
     },
     {
       "key": "handshake_for_server_name",

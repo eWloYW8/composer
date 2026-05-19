@@ -27,6 +27,7 @@
       "key": "torrc",
       "label": "torrc",
       "kind": "map",
+      "valueType": "string",
       "wide": true
     },
     {
@@ -114,7 +115,7 @@
         {
           "key": "routing_mark",
           "label": "routing_mark",
-          "kind": "string",
+          "kind": "string-or-number",
           "visibleWhen": [
             {
               "key": "detour",
@@ -266,6 +267,7 @@
               "key": "rewrite_ttl",
               "label": "rewrite_ttl",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {

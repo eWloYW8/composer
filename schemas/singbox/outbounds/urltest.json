@@ -1,0 +1,48 @@
+{
+  "type": "urltest",
+  "label": "URLTest",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "outbounds",
+      "label": "出站列表",
+      "kind": "string-list",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "url",
+      "label": "测试 URL",
+      "kind": "string"
+    },
+    {
+      "key": "interval",
+      "label": "测试间隔",
+      "kind": "string",
+      "placeholder": "3m"
+    },
+    {
+      "key": "tolerance",
+      "label": "容差",
+      "kind": "number",
+      "integer": true,
+      "min": 0,
+      "max": 65535
+    },
+    {
+      "key": "idle_timeout",
+      "label": "空闲超时",
+      "kind": "string"
+    },
+    {
+      "key": "interrupt_exist_connections",
+      "label": "中断现有连接",
+      "kind": "boolean"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "type": "derp",
+  "label": "DERP",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Service tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    },
+    {
+      "key": "config_path",
+      "label": "配置路径",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "verify_client_endpoint",
+      "label": "客户端验证端点",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "verify_client_url",
+      "label": "客户端验证 URL",
+      "kind": "string-or-object-list",
+      "wide": true,
+      "fields": [
+        {
+          "key": "url",
+          "label": "URL",
+          "kind": "string",
+          "required": true
+        },
+        {
+          "key": "_http_client",
+          "label": "HTTP client",
+          "kind": "object",
+          "flatten": true,
+          "ref": "shared/http-client.json"
+        }
+      ]
+    },
+    {
+      "key": "home",
+      "label": "Home",
+      "kind": "string"
+    },
+    {
+      "key": "mesh_with",
+      "label": "Mesh with",
+      "kind": "object-list",
+      "wide": true,
+      "fields": [
+        {
+          "key": "_server",
+          "label": "服务器字段",
+          "kind": "object",
+          "flatten": true,
+          "ref": "shared/server-options.json"
+        },
+        {
+          "key": "host",
+          "label": "Host",
+          "kind": "string"
+        },
+        {
+          "key": "tls",
+          "label": "TLS",
+          "kind": "object",
+          "wide": true,
+          "ref": "shared/tls-outbound.json"
+        },
+        {
+          "key": "_dialer",
+          "label": "拨号字段",
+          "kind": "object",
+          "flatten": true,
+          "ref": "shared/dialer.json"
+        }
+      ]
+    },
+    {
+      "key": "mesh_psk",
+      "label": "Mesh PSK",
+      "kind": "string"
+    },
+    {
+      "key": "mesh_psk_file",
+      "label": "Mesh PSK file",
+      "kind": "string"
+    },
+    {
+      "key": "stun",
+      "label": "STUN",
+      "kind": "number-or-object",
+      "wide": true,
+      "min": 1,
+      "max": 65535,
+      "fields": [
+        {
+          "key": "enabled",
+          "label": "启用 STUN",
+          "kind": "boolean",
+          "defaultValue": true
+        },
+        {
+          "key": "_listen",
+          "label": "监听字段",
+          "kind": "object",
+          "flatten": true,
+          "ref": "shared/listen.json"
+        }
+      ]
+    }
+  ]
+}

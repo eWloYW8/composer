@@ -26,12 +26,14 @@
         "key": "up_mbps",
         "label": "上行 Mbps",
         "kind": "number",
+        "integer": true,
         "min": 0
       },
       {
         "key": "down_mbps",
         "label": "下行 Mbps",
         "kind": "number",
+        "integer": true,
         "min": 0
       }
     ]

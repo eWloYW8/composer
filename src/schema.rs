@@ -1,10 +1,10 @@
 use std::{
-    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
 
 use anyhow::{Context, bail};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
@@ -25,7 +25,33 @@ pub struct ComposerSchema {
     #[serde(default)]
     pub inbound_type_options: Vec<OutboundTypeOption>,
     #[serde(default)]
+    pub default_endpoint_type: String,
+    #[serde(default)]
+    pub endpoints: Map<String, Value>,
+    #[serde(default)]
+    pub endpoint_type_options: Vec<OutboundTypeOption>,
+    #[serde(default)]
+    pub http_client: ObjectSchema,
+    #[serde(default)]
+    pub certificate: ObjectSchema,
+    #[serde(default)]
+    pub default_certificate_provider_type: String,
+    #[serde(default)]
+    pub certificate_providers: Map<String, Value>,
+    #[serde(default)]
+    pub certificate_provider_type_options: Vec<OutboundTypeOption>,
+    #[serde(default)]
+    pub default_service_type: String,
+    #[serde(default)]
+    pub services: Map<String, Value>,
+    #[serde(default)]
+    pub service_type_options: Vec<OutboundTypeOption>,
+    #[serde(default)]
+    pub global: Option<GlobalSchema>,
+    #[serde(default)]
     pub dns: Option<DnsSchema>,
+    #[serde(default)]
+    pub route: Option<RouteSchema>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,6 +66,16 @@ pub struct OutboundSchema {
     pub label: String,
     #[serde(default)]
     pub fields: Vec<SchemaField>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct GlobalSchema {
+    #[serde(default)]
+    pub log: ObjectSchema,
+    #[serde(default)]
+    pub ntp: ObjectSchema,
+    #[serde(default)]
+    pub experimental: ObjectSchema,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -62,6 +98,35 @@ pub struct DnsSchema {
     pub nested_rules: Map<String, Value>,
     #[serde(default)]
     pub nested_rule_type_options: Vec<OutboundTypeOption>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RouteSchema {
+    #[serde(default)]
+    pub options: ObjectSchema,
+    pub default_rule_type: String,
+    #[serde(default)]
+    pub rules: Map<String, Value>,
+    #[serde(default)]
+    pub rule_type_options: Vec<OutboundTypeOption>,
+    #[serde(default)]
+    pub default_nested_rule_type: String,
+    #[serde(default)]
+    pub nested_rules: Map<String, Value>,
+    #[serde(default)]
+    pub nested_rule_type_options: Vec<OutboundTypeOption>,
+    #[serde(default)]
+    pub default_rule_set_type: String,
+    #[serde(default)]
+    pub rule_sets: Map<String, Value>,
+    #[serde(default)]
+    pub rule_set_type_options: Vec<OutboundTypeOption>,
+    #[serde(default)]
+    pub default_headless_rule_type: String,
+    #[serde(default)]
+    pub headless_rules: Map<String, Value>,
+    #[serde(default)]
+    pub headless_rule_type_options: Vec<OutboundTypeOption>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -93,6 +158,14 @@ pub struct SchemaField {
     #[serde(default)]
     pub max: Option<f64>,
     #[serde(default)]
+    pub min_length: Option<usize>,
+    #[serde(default)]
+    pub max_length: Option<usize>,
+    #[serde(default)]
+    pub pattern: Option<String>,
+    #[serde(default)]
+    pub integer: bool,
+    #[serde(default)]
     pub wide: bool,
     #[serde(default)]
     pub fields: Vec<SchemaField>,
@@ -114,6 +187,8 @@ pub struct SchemaField {
     pub type_options: Vec<OutboundTypeOption>,
     #[serde(default)]
     pub schemas: Map<String, Value>,
+    #[serde(default)]
+    pub requires_any: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -123,17 +198,22 @@ pub enum FieldKind {
     Number,
     Boolean,
     Select,
+    StringOrNumber,
     StringList,
     NumberList,
+    StringOrNumberList,
     Map,
     Object,
     ObjectList,
     ObjectMap,
     VariantObject,
     StringOrObject,
+    StringOrObjectList,
+    NumberOrObject,
     BooleanOrObject,
     TypedList,
     Json,
+    Constraint,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -141,6 +221,8 @@ pub enum FieldKind {
 pub enum FieldValueType {
     String,
     Number,
+    #[serde(rename = "string-list")]
+    StringList,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -196,6 +278,35 @@ pub async fn load_schema(path: &Path) -> anyhow::Result<ComposerSchema> {
             })
             .collect();
     }
+    if schema.endpoint_type_options.is_empty() && !schema.endpoints.is_empty() {
+        schema.endpoint_type_options = endpoint_schemas(&schema)?
+            .into_iter()
+            .map(|(_, endpoint)| OutboundTypeOption {
+                value: endpoint.r#type,
+                label: endpoint.label,
+            })
+            .collect();
+    }
+    if schema.certificate_provider_type_options.is_empty()
+        && !schema.certificate_providers.is_empty()
+    {
+        schema.certificate_provider_type_options = certificate_provider_schemas(&schema)?
+            .into_iter()
+            .map(|(_, provider)| OutboundTypeOption {
+                value: provider.r#type,
+                label: provider.label,
+            })
+            .collect();
+    }
+    if schema.service_type_options.is_empty() && !schema.services.is_empty() {
+        schema.service_type_options = service_schemas(&schema)?
+            .into_iter()
+            .map(|(_, service)| OutboundTypeOption {
+                value: service.r#type,
+                label: service.label,
+            })
+            .collect();
+    }
     validate_schema_shape(&schema)?;
     Ok(schema)
 }
@@ -215,6 +326,28 @@ fn resolve_schema_refs(schema: &mut ComposerSchema, base_path: &Path) -> anyhow:
         *value = serde_json::to_value(inbound)?;
     }
 
+    for (key, value) in &mut schema.endpoints {
+        let mut endpoint: OutboundSchema = serde_json::from_value(value.clone())
+            .with_context(|| format!("invalid endpoint schema {key}"))?;
+        resolve_field_refs(&mut endpoint.fields, base_path)?;
+        *value = serde_json::to_value(endpoint)?;
+    }
+
+    resolve_field_refs(&mut schema.http_client.fields, base_path)?;
+    resolve_field_refs(&mut schema.certificate.fields, base_path)?;
+    for (key, value) in &mut schema.certificate_providers {
+        let mut provider: OutboundSchema = serde_json::from_value(value.clone())
+            .with_context(|| format!("invalid certificate provider schema {key}"))?;
+        resolve_field_refs(&mut provider.fields, base_path)?;
+        *value = serde_json::to_value(provider)?;
+    }
+    for (key, value) in &mut schema.services {
+        let mut service: OutboundSchema = serde_json::from_value(value.clone())
+            .with_context(|| format!("invalid service schema {key}"))?;
+        resolve_field_refs(&mut service.fields, base_path)?;
+        *value = serde_json::to_value(service)?;
+    }
+
     if let Some(dns) = &mut schema.dns {
         resolve_field_refs(&mut dns.options.fields, base_path)?;
         for (key, value) in &mut dns.servers {
@@ -232,6 +365,40 @@ fn resolve_schema_refs(schema: &mut ComposerSchema, base_path: &Path) -> anyhow:
         for (key, value) in &mut dns.nested_rules {
             let mut rule: OutboundSchema = serde_json::from_value(value.clone())
                 .with_context(|| format!("invalid nested DNS rule schema {key}"))?;
+            resolve_field_refs(&mut rule.fields, base_path)?;
+            *value = serde_json::to_value(rule)?;
+        }
+    }
+
+    if let Some(global) = &mut schema.global {
+        resolve_field_refs(&mut global.log.fields, base_path)?;
+        resolve_field_refs(&mut global.ntp.fields, base_path)?;
+        resolve_field_refs(&mut global.experimental.fields, base_path)?;
+    }
+
+    if let Some(route) = &mut schema.route {
+        resolve_field_refs(&mut route.options.fields, base_path)?;
+        for (key, value) in &mut route.rules {
+            let mut rule: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid route rule schema {key}"))?;
+            resolve_field_refs(&mut rule.fields, base_path)?;
+            *value = serde_json::to_value(rule)?;
+        }
+        for (key, value) in &mut route.nested_rules {
+            let mut rule: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid nested route rule schema {key}"))?;
+            resolve_field_refs(&mut rule.fields, base_path)?;
+            *value = serde_json::to_value(rule)?;
+        }
+        for (key, value) in &mut route.rule_sets {
+            let mut rule_set: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid route rule-set schema {key}"))?;
+            resolve_field_refs(&mut rule_set.fields, base_path)?;
+            *value = serde_json::to_value(rule_set)?;
+        }
+        for (key, value) in &mut route.headless_rules {
+            let mut rule: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid route headless rule schema {key}"))?;
             resolve_field_refs(&mut rule.fields, base_path)?;
             *value = serde_json::to_value(rule)?;
         }
@@ -310,12 +477,84 @@ async fn load_schema_directory(path: &Path) -> anyhow::Result<ComposerSchema> {
         }
     }
 
+    let endpoints_path = path.join("endpoints");
+    if endpoints_path.exists() {
+        for file_path in json_files(&endpoints_path).await? {
+            let endpoint = read_json_file::<OutboundSchema>(&file_path).await?;
+            let key = endpoint.r#type.clone();
+            if schema
+                .endpoints
+                .insert(key.clone(), serde_json::to_value(endpoint)?)
+                .is_some()
+            {
+                bail!("duplicate endpoint schema {key}");
+            }
+        }
+    }
+
+    let global_path = path.join("global");
+    if global_path.exists() {
+        schema.global = Some(load_global_schema_directory(&global_path).await?);
+        let http_client_path = global_path.join("http-client.json");
+        if http_client_path.exists() {
+            schema.http_client = read_json_file::<ObjectSchema>(&http_client_path).await?;
+        }
+    }
+
+    let certificate_path = path.join("certificate");
+    if certificate_path.exists() {
+        schema.certificate =
+            read_json_file::<ObjectSchema>(&certificate_path.join("index.json")).await?;
+        let providers_path = certificate_path.join("providers");
+        if providers_path.exists() {
+            for file_path in json_files(&providers_path).await? {
+                let provider = read_json_file::<OutboundSchema>(&file_path).await?;
+                let key = provider.r#type.clone();
+                if schema
+                    .certificate_providers
+                    .insert(key.clone(), serde_json::to_value(provider)?)
+                    .is_some()
+                {
+                    bail!("duplicate certificate provider schema {key}");
+                }
+            }
+        }
+    }
+
     let dns_path = path.join("dns");
     if dns_path.exists() {
         schema.dns = Some(load_dns_schema_directory(&dns_path).await?);
     }
 
+    let services_path = path.join("services");
+    if services_path.exists() {
+        for file_path in json_files(&services_path).await? {
+            let service = read_json_file::<OutboundSchema>(&file_path).await?;
+            let key = service.r#type.clone();
+            if schema
+                .services
+                .insert(key.clone(), serde_json::to_value(service)?)
+                .is_some()
+            {
+                bail!("duplicate service schema {key}");
+            }
+        }
+    }
+
+    let route_path = path.join("route");
+    if route_path.exists() {
+        schema.route = Some(load_route_schema_directory(&route_path).await?);
+    }
+
     Ok(schema)
+}
+
+async fn load_global_schema_directory(path: &Path) -> anyhow::Result<GlobalSchema> {
+    Ok(GlobalSchema {
+        log: read_json_file::<ObjectSchema>(&path.join("log.json")).await?,
+        ntp: read_json_file::<ObjectSchema>(&path.join("ntp.json")).await?,
+        experimental: read_json_file::<ObjectSchema>(&path.join("experimental.json")).await?,
+    })
 }
 
 async fn load_dns_schema_directory(path: &Path) -> anyhow::Result<DnsSchema> {
@@ -369,6 +608,72 @@ async fn load_dns_schema_directory(path: &Path) -> anyhow::Result<DnsSchema> {
     Ok(dns)
 }
 
+async fn load_route_schema_directory(path: &Path) -> anyhow::Result<RouteSchema> {
+    let mut route = read_json_file::<RouteSchema>(&path.join("index.json")).await?;
+
+    let rules_path = path.join("rules");
+    if rules_path.exists() {
+        for file_path in json_files(&rules_path).await? {
+            let rule = read_json_file::<OutboundSchema>(&file_path).await?;
+            let key = rule.r#type.clone();
+            if route
+                .rules
+                .insert(key.clone(), serde_json::to_value(rule)?)
+                .is_some()
+            {
+                bail!("duplicate route rule schema {key}");
+            }
+        }
+    }
+
+    let nested_rules_path = path.join("nested-rules");
+    if nested_rules_path.exists() {
+        for file_path in json_files(&nested_rules_path).await? {
+            let rule = read_json_file::<OutboundSchema>(&file_path).await?;
+            let key = rule.r#type.clone();
+            if route
+                .nested_rules
+                .insert(key.clone(), serde_json::to_value(rule)?)
+                .is_some()
+            {
+                bail!("duplicate nested route rule schema {key}");
+            }
+        }
+    }
+
+    let rule_sets_path = path.join("rule-sets");
+    if rule_sets_path.exists() {
+        for file_path in json_files(&rule_sets_path).await? {
+            let rule_set = read_json_file::<OutboundSchema>(&file_path).await?;
+            let key = rule_set.r#type.clone();
+            if route
+                .rule_sets
+                .insert(key.clone(), serde_json::to_value(rule_set)?)
+                .is_some()
+            {
+                bail!("duplicate route rule-set schema {key}");
+            }
+        }
+    }
+
+    let headless_rules_path = path.join("headless-rules");
+    if headless_rules_path.exists() {
+        for file_path in json_files(&headless_rules_path).await? {
+            let rule = read_json_file::<OutboundSchema>(&file_path).await?;
+            let key = rule.r#type.clone();
+            if route
+                .headless_rules
+                .insert(key.clone(), serde_json::to_value(rule)?)
+                .is_some()
+            {
+                bail!("duplicate route headless rule schema {key}");
+            }
+        }
+    }
+
+    Ok(route)
+}
+
 async fn json_files(path: &Path) -> anyhow::Result<Vec<PathBuf>> {
     let mut entries = tokio::fs::read_dir(path)
         .await
@@ -399,8 +704,13 @@ pub fn validate_composer_state(
     schema: &ComposerSchema,
     state: &ComposerState,
 ) -> anyhow::Result<()> {
+    validate_global_config(schema, state)?;
+    validate_http_clients(schema, state)?;
+    validate_certificate_config(schema, state)?;
+    validate_services_config(schema, state)?;
     let outbounds = outbound_schemas(schema)?;
     let inbounds = inbound_schemas(schema)?;
+    let endpoints = endpoint_schemas(schema)?;
     for source in &state.proxy_sources {
         if source.kind != ProxySourceKind::Manual {
             continue;
@@ -428,8 +738,26 @@ pub fn validate_composer_state(
             )?;
         }
     }
+    if !state.endpoints.is_empty() {
+        if endpoints.is_empty() {
+            bail!("state has endpoints but schema has no endpoint definitions");
+        }
+        for (index, endpoint) in state.endpoints.iter().enumerate() {
+            validate_typed_node(
+                schema,
+                &endpoints,
+                endpoint,
+                &format!("endpoints[{index}]"),
+                "type",
+            )?;
+        }
+    }
     if state.dns.enabled {
         validate_dns_config(schema, state)?;
+    }
+    validate_route_config(schema, state)?;
+    if !state.extra_route_rules.is_empty() {
+        validate_extra_route_rules(schema, state)?;
     }
     Ok(())
 }
@@ -466,6 +794,36 @@ fn validate_schema_shape(schema: &ComposerSchema) -> anyhow::Result<()> {
     } else if !schema.default_inbound_type.is_empty() {
         bail!("default_inbound_type is set but no inbound schemas are defined");
     }
+    if !schema.endpoints.is_empty() {
+        if schema.default_endpoint_type.is_empty() {
+            bail!("default_endpoint_type is required when endpoints are defined");
+        }
+        validate_typed_schema_map(
+            &schema.endpoints,
+            &schema.default_endpoint_type,
+            "endpoints",
+        )?;
+    } else if !schema.default_endpoint_type.is_empty() {
+        bail!("default_endpoint_type is set but no endpoint schemas are defined");
+    }
+    validate_fields_shape(&schema.http_client.fields, "http_client")?;
+    validate_fields_shape(&schema.certificate.fields, "certificate")?;
+    if !schema.certificate_providers.is_empty() {
+        validate_typed_schema_map(
+            &schema.certificate_providers,
+            &schema.default_certificate_provider_type,
+            "certificate_providers",
+        )?;
+    } else if !schema.default_certificate_provider_type.is_empty() {
+        bail!(
+            "default_certificate_provider_type is set but no certificate provider schemas are defined"
+        );
+    }
+    if !schema.services.is_empty() {
+        validate_typed_schema_map(&schema.services, &schema.default_service_type, "services")?;
+    } else if !schema.default_service_type.is_empty() {
+        bail!("default_service_type is set but no service schemas are defined");
+    }
     if let Some(dns) = &schema.dns {
         validate_fields_shape(&dns.options.fields, "dns.options")?;
         validate_typed_schema_map(&dns.servers, &dns.default_server_type, "dns.servers")?;
@@ -475,6 +833,36 @@ fn validate_schema_shape(schema: &ComposerSchema) -> anyhow::Result<()> {
                 &dns.nested_rules,
                 &dns.default_nested_rule_type,
                 "dns.nested_rules",
+            )?;
+        }
+    }
+    if let Some(global) = &schema.global {
+        validate_fields_shape(&global.log.fields, "global.log")?;
+        validate_fields_shape(&global.ntp.fields, "global.ntp")?;
+        validate_fields_shape(&global.experimental.fields, "global.experimental")?;
+    }
+    if let Some(route) = &schema.route {
+        validate_fields_shape(&route.options.fields, "route.options")?;
+        validate_typed_schema_map(&route.rules, &route.default_rule_type, "route.rules")?;
+        if !route.nested_rules.is_empty() {
+            validate_typed_schema_map(
+                &route.nested_rules,
+                &route.default_nested_rule_type,
+                "route.nested_rules",
+            )?;
+        }
+        if !route.rule_sets.is_empty() {
+            validate_typed_schema_map(
+                &route.rule_sets,
+                &route.default_rule_set_type,
+                "route.rule_sets",
+            )?;
+        }
+        if !route.headless_rules.is_empty() {
+            validate_typed_schema_map(
+                &route.headless_rules,
+                &route.default_headless_rule_type,
+                "route.headless_rules",
             )?;
         }
     }
@@ -499,6 +887,138 @@ fn validate_typed_schema_map(
             bail!("{path}.{key} schema type mismatch: {}", schema.r#type);
         }
         validate_fields_shape(&schema.fields, &format!("{path}.{key}"))?;
+    }
+    Ok(())
+}
+
+fn validate_global_config(schema: &ComposerSchema, state: &ComposerState) -> anyhow::Result<()> {
+    let log = state
+        .global
+        .log
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("global.log must be an object"))?;
+    let ntp = state
+        .global
+        .ntp
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("global.ntp must be an object"))?;
+    let experimental = state
+        .global
+        .experimental
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("global.experimental must be an object"))?;
+    if log.is_empty() && ntp.is_empty() && experimental.is_empty() && schema.global.is_none() {
+        return Ok(());
+    }
+    let global_schema = schema.global.as_ref().ok_or_else(|| {
+        anyhow::anyhow!("global config is present but schema has no global section")
+    })?;
+    validate_object_against_fields(
+        schema,
+        log,
+        &global_schema.log.fields,
+        "global.log",
+        &[],
+        true,
+    )?;
+    validate_object_against_fields(
+        schema,
+        ntp,
+        &global_schema.ntp.fields,
+        "global.ntp",
+        &[],
+        true,
+    )?;
+    validate_object_against_fields(
+        schema,
+        experimental,
+        &global_schema.experimental.fields,
+        "global.experimental",
+        &[],
+        true,
+    )?;
+    Ok(())
+}
+
+fn validate_http_clients(schema: &ComposerSchema, state: &ComposerState) -> anyhow::Result<()> {
+    if state.http_clients.is_empty() {
+        return Ok(());
+    }
+    if schema.http_client.fields.is_empty() {
+        bail!("state has http_clients but schema has no http_client definition");
+    }
+    for (index, client) in state.http_clients.iter().enumerate() {
+        let object = client
+            .as_object()
+            .ok_or_else(|| anyhow::anyhow!("http_clients[{index}] must be an object"))?;
+        validate_object_against_fields(
+            schema,
+            object,
+            &schema.http_client.fields,
+            &format!("http_clients[{index}]"),
+            &[],
+            true,
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_certificate_config(
+    schema: &ComposerSchema,
+    state: &ComposerState,
+) -> anyhow::Result<()> {
+    let certificate = state
+        .certificate
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("certificate must be an object"))?;
+    if !certificate.is_empty() {
+        if schema.certificate.fields.is_empty() {
+            bail!("state has certificate but schema has no certificate definition");
+        }
+        validate_object_against_fields(
+            schema,
+            certificate,
+            &schema.certificate.fields,
+            "certificate",
+            &[],
+            true,
+        )?;
+    }
+    if state.certificate_providers.is_empty() {
+        return Ok(());
+    }
+    let providers = certificate_provider_schemas(schema)?;
+    if providers.is_empty() {
+        bail!("state has certificate_providers but schema has no provider definitions");
+    }
+    for (index, provider) in state.certificate_providers.iter().enumerate() {
+        validate_typed_node(
+            schema,
+            &providers,
+            provider,
+            &format!("certificate_providers[{index}]"),
+            "type",
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_services_config(schema: &ComposerSchema, state: &ComposerState) -> anyhow::Result<()> {
+    if state.services.is_empty() {
+        return Ok(());
+    }
+    let services = service_schemas(schema)?;
+    if services.is_empty() {
+        bail!("state has services but schema has no service definitions");
+    }
+    for (index, service) in state.services.iter().enumerate() {
+        validate_typed_node(
+            schema,
+            &services,
+            service,
+            &format!("services[{index}]"),
+            "type",
+        )?;
     }
     Ok(())
 }
@@ -538,6 +1058,67 @@ fn validate_dns_config(schema: &ComposerSchema, state: &ComposerState) -> anyhow
     Ok(())
 }
 
+fn validate_extra_route_rules(
+    schema: &ComposerSchema,
+    state: &ComposerState,
+) -> anyhow::Result<()> {
+    let route_schema = schema.route.as_ref().ok_or_else(|| {
+        anyhow::anyhow!("extra route rules are configured but schema has no route section")
+    })?;
+    let rules = typed_schemas(&route_schema.rules, "route.rules")?;
+    for (index, rule) in state.extra_route_rules.iter().enumerate() {
+        validate_typed_node(
+            schema,
+            &rules,
+            rule,
+            &format!("extra_route_rules[{index}]"),
+            "type",
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_route_config(schema: &ComposerSchema, state: &ComposerState) -> anyhow::Result<()> {
+    let empty_options = state
+        .route
+        .options
+        .as_object()
+        .map(|object| object.is_empty())
+        .unwrap_or(false);
+    if empty_options && state.route.rule_sets.is_empty() && schema.route.is_none() {
+        return Ok(());
+    }
+    let route_schema = schema.route.as_ref().ok_or_else(|| {
+        anyhow::anyhow!("route config is present but schema has no route section")
+    })?;
+    let options = state
+        .route
+        .options
+        .as_object()
+        .ok_or_else(|| anyhow::anyhow!("route.options must be an object"))?;
+    validate_object_against_fields(
+        schema,
+        options,
+        &route_schema.options.fields,
+        "route.options",
+        &[],
+        true,
+    )?;
+    if !state.route.rule_sets.is_empty() {
+        let rule_sets = typed_schemas(&route_schema.rule_sets, "route.rule_sets")?;
+        for (index, rule_set) in state.route.rule_sets.iter().enumerate() {
+            validate_typed_node(
+                schema,
+                &rule_sets,
+                rule_set,
+                &format!("route.rule_sets[{index}]"),
+                "type",
+            )?;
+        }
+    }
+    Ok(())
+}
+
 fn typed_schemas(
     values: &Map<String, Value>,
     path: &str,
@@ -566,10 +1147,12 @@ fn validate_typed_node(
         .get(type_key)
         .and_then(Value::as_str)
         .ok_or_else(|| anyhow::anyhow!("{path}.{type_key} is required"))?;
-    let schema = schemas
+    let Some(schema) = schemas
         .iter()
         .find_map(|(key, schema)| (key == node_type).then_some(schema))
-        .ok_or_else(|| anyhow::anyhow!("{path}.{type_key} is not supported: {node_type}"))?;
+    else {
+        return Ok(());
+    };
     validate_object_against_fields(root_schema, object, &schema.fields, path, &[type_key], true)?;
     Ok(())
 }
@@ -594,6 +1177,44 @@ fn inbound_schemas(schema: &ComposerSchema) -> anyhow::Result<Vec<(String, Outbo
             let inbound: OutboundSchema = serde_json::from_value(value.clone())
                 .with_context(|| format!("invalid inbound schema {key}"))?;
             Ok((key.clone(), inbound))
+        })
+        .collect()
+}
+
+fn endpoint_schemas(schema: &ComposerSchema) -> anyhow::Result<Vec<(String, OutboundSchema)>> {
+    schema
+        .endpoints
+        .iter()
+        .map(|(key, value)| {
+            let endpoint: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid endpoint schema {key}"))?;
+            Ok((key.clone(), endpoint))
+        })
+        .collect()
+}
+
+fn certificate_provider_schemas(
+    schema: &ComposerSchema,
+) -> anyhow::Result<Vec<(String, OutboundSchema)>> {
+    schema
+        .certificate_providers
+        .iter()
+        .map(|(key, value)| {
+            let provider: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid certificate provider schema {key}"))?;
+            Ok((key.clone(), provider))
+        })
+        .collect()
+}
+
+fn service_schemas(schema: &ComposerSchema) -> anyhow::Result<Vec<(String, OutboundSchema)>> {
+    schema
+        .services
+        .iter()
+        .map(|(key, value)| {
+            let service: OutboundSchema = serde_json::from_value(value.clone())
+                .with_context(|| format!("invalid service schema {key}"))?;
+            Ok((key.clone(), service))
         })
         .collect()
 }
@@ -624,6 +1245,30 @@ fn typed_list_schemas(
             })?;
             typed_schemas(&dns.nested_rules, "dns.nested_rules")
         }
+        "route.rules" => {
+            let route = root_schema.route.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("{path} references route.rules without route schema")
+            })?;
+            typed_schemas(&route.rules, "route.rules")
+        }
+        "route.nested_rules" => {
+            let route = root_schema.route.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("{path} references route.nested_rules without route schema")
+            })?;
+            typed_schemas(&route.nested_rules, "route.nested_rules")
+        }
+        "route.rule_sets" => {
+            let route = root_schema.route.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("{path} references route.rule_sets without route schema")
+            })?;
+            typed_schemas(&route.rule_sets, "route.rule_sets")
+        }
+        "route.headless_rules" => {
+            let route = root_schema.route.as_ref().ok_or_else(|| {
+                anyhow::anyhow!("{path} references route.headless_rules without route schema")
+            })?;
+            typed_schemas(&route.headless_rules, "route.headless_rules")
+        }
         other => Err(anyhow::anyhow!(
             "{path} references unsupported schema namespace {other}"
         )),
@@ -635,11 +1280,17 @@ fn validate_fields_shape(fields: &[SchemaField], path: &str) -> anyhow::Result<(
         if field.key.is_empty() {
             bail!("{path} contains an empty field key");
         }
+        if let Some(pattern) = &field.pattern {
+            Regex::new(pattern)
+                .with_context(|| format!("{path}.{} has invalid pattern", field.key))?;
+        }
         match field.kind {
             FieldKind::Object
             | FieldKind::ObjectList
             | FieldKind::ObjectMap
             | FieldKind::StringOrObject
+            | FieldKind::StringOrObjectList
+            | FieldKind::NumberOrObject
             | FieldKind::BooleanOrObject => {
                 validate_fields_shape(&field.fields, &format!("{path}.{}", field.key))?;
             }
@@ -678,6 +1329,11 @@ fn validate_fields_shape(fields: &[SchemaField], path: &str) -> anyhow::Result<(
                     )?;
                 }
             }
+            FieldKind::Constraint => {
+                if field.requires_any.is_empty() {
+                    bail!("{path}.{} constraint has no requiresAny fields", field.key);
+                }
+            }
             _ => {}
         }
     }
@@ -697,10 +1353,12 @@ fn validate_outbound_node(
         .get("type")
         .and_then(Value::as_str)
         .ok_or_else(|| anyhow::anyhow!("{path}.type is required"))?;
-    let outbound = outbounds
+    let Some(outbound) = outbounds
         .iter()
         .find_map(|(key, schema)| (key == outbound_type).then_some(schema))
-        .ok_or_else(|| anyhow::anyhow!("{path}.type is not supported: {outbound_type}"))?;
+    else {
+        return Ok(());
+    };
     validate_object_against_fields(root_schema, object, &outbound.fields, path, &["type"], true)?;
     Ok(())
 }
@@ -710,30 +1368,19 @@ fn validate_object_against_fields(
     object: &Map<String, Value>,
     fields: &[SchemaField],
     path: &str,
-    base_keys: &[&str],
-    check_unknown: bool,
+    _base_keys: &[&str],
+    _check_unknown: bool,
 ) -> anyhow::Result<()> {
-    let mut known_keys: BTreeSet<String> = base_keys.iter().map(|key| (*key).to_string()).collect();
-    collect_field_keys(fields, &mut known_keys);
-
-    if check_unknown {
-        for key in object.keys() {
-            if !known_keys.contains(key) {
-                bail!("{path}.{key} is not defined by schema");
-            }
-        }
-    }
-
-    let base_key_set: BTreeSet<String> = base_keys.iter().map(|key| (*key).to_string()).collect();
-    let mut visible_keys = BTreeSet::new();
-
     for field in fields {
         if field.flatten || field.key == "_dialer" {
             if !is_field_visible(field, object) {
                 continue;
             }
             validate_object_against_fields(root_schema, object, &field.fields, path, &[], false)?;
-            collect_visible_field_keys(&field.fields, object, &mut visible_keys);
+            continue;
+        }
+
+        if field.kind == FieldKind::Constraint {
             continue;
         }
 
@@ -742,11 +1389,7 @@ fn validate_object_against_fields(
         if !visible {
             continue;
         }
-        visible_keys.insert(field.key.clone());
 
-        if field.required && !has_field_content(raw, field.kind) {
-            bail!("{path}.{} is required", field.key);
-        }
         let Some(raw) = raw else {
             continue;
         };
@@ -756,46 +1399,7 @@ fn validate_object_against_fields(
         validate_value(root_schema, raw, field, &format!("{path}.{}", field.key))?;
     }
 
-    if check_unknown {
-        for key in object.keys() {
-            if base_key_set.contains(key) || !known_keys.contains(key) || visible_keys.contains(key)
-            {
-                continue;
-            }
-            if has_any_content(object.get(key)) {
-                bail!("{path}.{key} conflicts with current field selection");
-            }
-        }
-    }
-
     Ok(())
-}
-
-fn collect_field_keys(fields: &[SchemaField], output: &mut BTreeSet<String>) {
-    for field in fields {
-        if field.flatten || field.key == "_dialer" {
-            collect_field_keys(&field.fields, output);
-        } else {
-            output.insert(field.key.clone());
-        }
-    }
-}
-
-fn collect_visible_field_keys(
-    fields: &[SchemaField],
-    object: &Map<String, Value>,
-    output: &mut BTreeSet<String>,
-) {
-    for field in fields {
-        if !is_field_visible(field, object) {
-            continue;
-        }
-        if field.flatten || field.key == "_dialer" {
-            collect_visible_field_keys(&field.fields, object, output);
-        } else {
-            output.insert(field.key.clone());
-        }
-    }
 }
 
 fn validate_value(
@@ -805,234 +1409,190 @@ fn validate_value(
     path: &str,
 ) -> anyhow::Result<()> {
     match field.kind {
-        FieldKind::String => {
-            if !value.is_string() {
-                bail!("{path} must be a string");
-            }
-        }
-        FieldKind::Number => {
-            let number = value
-                .as_f64()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be a number"))?;
-            if let Some(min) = field.min {
-                if number < min {
-                    bail!("{path} must be >= {min}");
-                }
-            }
-            if let Some(max) = field.max {
-                if number > max {
-                    bail!("{path} must be <= {max}");
-                }
-            }
-        }
-        FieldKind::Boolean => {
-            if !value.is_boolean() {
-                bail!("{path} must be a boolean");
-            }
-        }
-        FieldKind::Select => {
-            match field.value_type {
-                Some(FieldValueType::Number) => {
-                    if !value.is_number() {
-                        bail!("{path} must be a number");
-                    }
-                }
-                _ => {
-                    if !value.is_string() {
-                        bail!("{path} must be a string");
-                    }
-                }
-            }
-            let rendered = render_scalar(value);
-            if !field.options.is_empty() && !field.options.contains(&rendered) {
-                bail!("{path} has unsupported value {rendered}");
-            }
-        }
-        FieldKind::StringList => {
-            validate_listable(value, path, |item| item.is_string(), "string")?;
-            validate_allowed_list(value, &field.allowed_values, path)?;
-        }
-        FieldKind::NumberList => {
-            validate_listable(value, path, |item| item.is_number(), "number")?;
-            validate_number_list_bounds(value, field, path)?;
-        }
-        FieldKind::Map => {
-            if !value.is_object() {
-                bail!("{path} must be an object");
-            }
-        }
+        FieldKind::String
+        | FieldKind::Number
+        | FieldKind::Boolean
+        | FieldKind::Select
+        | FieldKind::StringOrNumber
+        | FieldKind::StringList
+        | FieldKind::NumberList
+        | FieldKind::StringOrNumberList
+        | FieldKind::Map
+        | FieldKind::Json
+        | FieldKind::Constraint => {}
         FieldKind::ObjectList => {
-            let items = value
-                .as_array()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be an array"))?;
-            for (index, item) in items.iter().enumerate() {
-                let nested = item
-                    .as_object()
-                    .ok_or_else(|| anyhow::anyhow!("{path}[{index}] must be an object"))?;
+            if let Some(nested) = value.as_object() {
                 validate_object_against_fields(
                     root_schema,
                     nested,
                     &field.fields,
-                    &format!("{path}[{index}]"),
+                    path,
                     &[],
                     true,
                 )?;
+            } else if let Some(items) = value.as_array() {
+                for (index, item) in items.iter().enumerate() {
+                    let Some(nested) = item.as_object() else {
+                        continue;
+                    };
+                    validate_object_against_fields(
+                        root_schema,
+                        nested,
+                        &field.fields,
+                        &format!("{path}[{index}]"),
+                        &[],
+                        true,
+                    )?;
+                }
             }
         }
         FieldKind::ObjectMap => {
-            let items = value
-                .as_object()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be an object"))?;
-            for (key, item) in items {
-                let nested = item
-                    .as_object()
-                    .ok_or_else(|| anyhow::anyhow!("{path}.{key} must be an object"))?;
+            if let Some(items) = value.as_object() {
+                for (key, item) in items {
+                    let Some(nested) = item.as_object() else {
+                        continue;
+                    };
+                    validate_object_against_fields(
+                        root_schema,
+                        nested,
+                        &field.fields,
+                        &format!("{path}.{key}"),
+                        &[],
+                        true,
+                    )?;
+                }
+            }
+        }
+        FieldKind::Object => {
+            if let Some(nested) = value.as_object() {
                 validate_object_against_fields(
                     root_schema,
                     nested,
                     &field.fields,
-                    &format!("{path}.{key}"),
+                    path,
                     &[],
                     true,
                 )?;
             }
         }
-        FieldKind::Object => {
-            let nested = value
-                .as_object()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be an object"))?;
-            validate_object_against_fields(root_schema, nested, &field.fields, path, &[], true)?;
-        }
         FieldKind::StringOrObject => {
-            if value.is_string() {
-                return Ok(());
-            }
-            let nested = value
-                .as_object()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be a string or object"))?;
-            validate_object_against_fields(root_schema, nested, &field.fields, path, &[], true)?;
-        }
-        FieldKind::BooleanOrObject => {
-            if value.is_boolean() {
-                return Ok(());
-            }
-            let nested = value
-                .as_object()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be a boolean or object"))?;
-            validate_object_against_fields(root_schema, nested, &field.fields, path, &[], true)?;
-        }
-        FieldKind::TypedList => {
-            let items = value
-                .as_array()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be an array"))?;
-            let item_schemas = typed_list_schemas(root_schema, field, path)?;
-            for (index, item) in items.iter().enumerate() {
-                validate_typed_node(
+            if let Some(nested) = value.as_object() {
+                validate_object_against_fields(
                     root_schema,
-                    &item_schemas,
-                    item,
-                    &format!("{path}[{index}]"),
-                    "type",
+                    nested,
+                    &field.fields,
+                    path,
+                    &[],
+                    true,
                 )?;
             }
         }
-        FieldKind::Json => {}
-        FieldKind::VariantObject => {
-            let nested = value
-                .as_object()
-                .ok_or_else(|| anyhow::anyhow!("{path} must be an object"))?;
-            let variant_type = nested
-                .get("type")
-                .and_then(Value::as_str)
-                .ok_or_else(|| anyhow::anyhow!("{path}.type is required"))?;
-            if !field
-                .variant_options
-                .iter()
-                .any(|item| item == variant_type)
-            {
-                bail!("{path}.type has unsupported value {variant_type}");
+        FieldKind::StringOrObjectList => {
+            validate_string_or_object_list(root_schema, value, field, path)?;
+        }
+        FieldKind::NumberOrObject => {
+            if let Some(nested) = value.as_object() {
+                validate_object_against_fields(
+                    root_schema,
+                    nested,
+                    &field.fields,
+                    path,
+                    &[],
+                    true,
+                )?;
             }
-            let variant_value = field.variants.get(variant_type).ok_or_else(|| {
-                anyhow::anyhow!("{path}.type has no schema for value {variant_type}")
-            })?;
-            let variant_fields: Vec<SchemaField> = serde_json::from_value(variant_value.clone())?;
-            validate_object_against_fields(
-                root_schema,
-                nested,
-                &variant_fields,
-                path,
-                &["type"],
-                true,
-            )?;
+        }
+        FieldKind::BooleanOrObject => {
+            if let Some(nested) = value.as_object() {
+                validate_object_against_fields(
+                    root_schema,
+                    nested,
+                    &field.fields,
+                    path,
+                    &[],
+                    true,
+                )?;
+            }
+        }
+        FieldKind::TypedList => {
+            if let Some(items) = value.as_array() {
+                if let Ok(item_schemas) = typed_list_schemas(root_schema, field, path) {
+                    for (index, item) in items.iter().enumerate() {
+                        if item
+                            .as_object()
+                            .and_then(|object| object.get("type"))
+                            .and_then(Value::as_str)
+                            .is_none()
+                        {
+                            continue;
+                        }
+                        validate_typed_node(
+                            root_schema,
+                            &item_schemas,
+                            item,
+                            &format!("{path}[{index}]"),
+                            "type",
+                        )?;
+                    }
+                }
+            }
+        }
+        FieldKind::VariantObject => {
+            if let Some(nested) = value.as_object() {
+                let Some(variant_type) = nested.get("type").and_then(Value::as_str) else {
+                    return Ok(());
+                };
+                let Some(variant_value) = field.variants.get(variant_type) else {
+                    return Ok(());
+                };
+                let variant_fields: Vec<SchemaField> =
+                    serde_json::from_value(variant_value.clone())?;
+                validate_object_against_fields(
+                    root_schema,
+                    nested,
+                    &variant_fields,
+                    path,
+                    &["type"],
+                    true,
+                )?;
+            }
         }
     }
     Ok(())
 }
 
-fn validate_listable(
-    value: &Value,
-    path: &str,
-    predicate: impl Fn(&Value) -> bool,
-    expected: &str,
-) -> anyhow::Result<()> {
-    if predicate(value) {
-        return Ok(());
-    }
-    let Some(items) = value.as_array() else {
-        bail!("{path} must be a {expected} or {expected} array");
-    };
-    for item in items {
-        if !predicate(item) {
-            bail!("{path} must contain only {expected} values");
-        }
-    }
-    Ok(())
-}
-
-fn validate_allowed_list(value: &Value, allowed: &[String], path: &str) -> anyhow::Result<()> {
-    if allowed.is_empty() {
-        return Ok(());
-    }
-    let mut values = Vec::new();
-    if let Some(value) = value.as_str() {
-        values.push(value.to_string());
-    } else if let Some(items) = value.as_array() {
-        values.extend(items.iter().filter_map(Value::as_str).map(str::to_string));
-    }
-    for item in values {
-        if !allowed.contains(&item) {
-            bail!("{path} contains unsupported value {item}");
-        }
-    }
-    Ok(())
-}
-
-fn validate_number_list_bounds(
+fn validate_string_or_object_list(
+    root_schema: &ComposerSchema,
     value: &Value,
     field: &SchemaField,
     path: &str,
 ) -> anyhow::Result<()> {
-    let values: Vec<&Value> = if let Some(items) = value.as_array() {
-        items.iter().collect()
-    } else {
-        vec![value]
+    if value.is_string() || value.is_object() {
+        return validate_string_or_object_list_item(root_schema, value, field, path);
+    }
+    let Some(items) = value.as_array() else {
+        return Ok(());
     };
-    for item in values {
-        let number = item
-            .as_f64()
-            .ok_or_else(|| anyhow::anyhow!("{path} must contain only number values"))?;
-        if let Some(min) = field.min {
-            if number < min {
-                bail!("{path} values must be >= {min}");
-            }
-        }
-        if let Some(max) = field.max {
-            if number > max {
-                bail!("{path} values must be <= {max}");
-            }
-        }
+    for (index, item) in items.iter().enumerate() {
+        validate_string_or_object_list_item(root_schema, item, field, &format!("{path}[{index}]"))?;
     }
     Ok(())
+}
+
+fn validate_string_or_object_list_item(
+    root_schema: &ComposerSchema,
+    value: &Value,
+    field: &SchemaField,
+    path: &str,
+) -> anyhow::Result<()> {
+    if let Some(value) = value.as_str() {
+        let _ = (value, field, path);
+        return Ok(());
+    }
+    let Some(nested) = value.as_object() else {
+        return Ok(());
+    };
+    validate_object_against_fields(root_schema, nested, &field.fields, path, &[], true)
 }
 
 fn is_field_visible(field: &SchemaField, object: &Map<String, Value>) -> bool {
@@ -1043,7 +1603,7 @@ fn is_field_visible(field: &SchemaField, object: &Map<String, Value>) -> bool {
 }
 
 fn condition_matches(object: &Map<String, Value>, condition: &FieldCondition) -> bool {
-    let raw = object.get(&condition.key);
+    let raw = condition_value(object, &condition.key);
     match condition.op {
         ConditionOp::Empty => !has_any_content(raw),
         ConditionOp::Present => has_any_content(raw),
@@ -1062,6 +1622,16 @@ fn condition_matches(object: &Map<String, Value>, condition: &FieldCondition) ->
     }
 }
 
+fn condition_value<'a>(object: &'a Map<String, Value>, key: &str) -> Option<&'a Value> {
+    let mut parts = key.split('.');
+    let first = parts.next()?;
+    let mut current = object.get(first)?;
+    for part in parts {
+        current = current.as_object()?.get(part)?;
+    }
+    Some(current)
+}
+
 fn has_field_content(value: Option<&Value>, kind: FieldKind) -> bool {
     let Some(value) = value else {
         return false;
@@ -1069,19 +1639,30 @@ fn has_field_content(value: Option<&Value>, kind: FieldKind) -> bool {
     match kind {
         FieldKind::Boolean => value.as_bool() == Some(true),
         FieldKind::Number => value.is_number(),
+        FieldKind::StringOrNumber => {
+            value.is_number()
+                || value
+                    .as_str()
+                    .map(|item| !item.trim().is_empty())
+                    .unwrap_or(false)
+        }
         FieldKind::String | FieldKind::Select => value
             .as_str()
             .map(|item| !item.trim().is_empty())
             .unwrap_or(true),
-        FieldKind::StringList
-        | FieldKind::NumberList
-        | FieldKind::TypedList
-        | FieldKind::ObjectList => match value {
-            Value::Array(items) => !items.is_empty(),
-            Value::String(item) => !item.trim().is_empty(),
-            Value::Number(_) => true,
-            _ => false,
-        },
+        FieldKind::StringList | FieldKind::NumberList | FieldKind::StringOrNumberList => {
+            match value {
+                Value::Array(items) => !items.is_empty(),
+                Value::String(item) => !item.trim().is_empty(),
+                Value::Number(_) => true,
+                _ => false,
+            }
+        }
+        FieldKind::TypedList => value.as_array().is_some_and(|items| !items.is_empty()),
+        FieldKind::ObjectList => value
+            .as_array()
+            .map(|items| !items.is_empty())
+            .unwrap_or_else(|| value.is_object()),
         FieldKind::Map | FieldKind::ObjectMap => {
             value.as_object().is_some_and(|object| !object.is_empty())
         }
@@ -1090,8 +1671,16 @@ fn has_field_content(value: Option<&Value>, kind: FieldKind) -> bool {
             .as_str()
             .map(|item| !item.trim().is_empty())
             .unwrap_or_else(|| value.is_object()),
+        FieldKind::StringOrObjectList => match value {
+            Value::Array(items) => !items.is_empty(),
+            Value::String(item) => !item.trim().is_empty(),
+            Value::Object(_) => true,
+            _ => false,
+        },
+        FieldKind::NumberOrObject => value.is_number() || value.is_object(),
         FieldKind::BooleanOrObject => value.as_bool() == Some(true) || value.is_object(),
         FieldKind::Json => !value.is_null(),
+        FieldKind::Constraint => false,
     }
 }
 
@@ -1119,5 +1708,399 @@ fn render_scalar(value: &Value) -> String {
         Value::Number(value) => value.to_string(),
         Value::Bool(value) => value.to_string(),
         other => other.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn empty_schema() -> ComposerSchema {
+        serde_json::from_value(json!({
+            "schema_version": 1,
+            "default_outbound_type": "",
+            "outbounds": {}
+        }))
+        .expect("test schema should deserialize")
+    }
+
+    fn field(value: Value) -> SchemaField {
+        serde_json::from_value(value).expect("test field should deserialize")
+    }
+
+    #[test]
+    fn integer_number_accepts_fractional_values() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "port",
+            "label": "Port",
+            "kind": "number",
+            "integer": true
+        }));
+
+        validate_value(&schema, &json!(443), &field, "port").expect("integer should validate");
+        validate_value(&schema, &json!(443.5), &field, "port")
+            .expect("integer is a UI hint, not a save blocker");
+    }
+
+    #[test]
+    fn integer_number_list_accepts_fractional_values() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "ports",
+            "label": "Ports",
+            "kind": "number-list",
+            "integer": true
+        }));
+
+        validate_value(&schema, &json!([80, 443]), &field, "ports")
+            .expect("integer list should validate");
+        validate_value(&schema, &json!([80, 443.5]), &field, "ports")
+            .expect("integer is a UI hint, not a save blocker");
+    }
+
+    #[test]
+    fn nested_visible_when_reads_dot_paths() {
+        let field = field(json!({
+            "key": "reality",
+            "label": "Reality",
+            "kind": "object",
+            "visibleWhen": [
+                {
+                    "key": "ech.enabled",
+                    "op": "not-equals",
+                    "value": true
+                }
+            ]
+        }));
+        let visible_object = json!({
+            "ech": {
+                "enabled": false
+            }
+        });
+        let hidden_object = json!({
+            "ech": {
+                "enabled": true
+            }
+        });
+
+        assert!(is_field_visible(
+            &field,
+            visible_object.as_object().expect("object")
+        ));
+        assert!(!is_field_visible(
+            &field,
+            hidden_object.as_object().expect("object")
+        ));
+    }
+
+    #[test]
+    fn string_constraints_are_non_blocking() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "realm_id",
+            "label": "Realm ID",
+            "kind": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+        }));
+
+        validate_value(&schema, &json!("realm-1"), &field, "realm_id")
+            .expect("matching string should validate");
+        validate_value(&schema, &json!(""), &field, "realm_id")
+            .expect("length is a UI hint, not a save blocker");
+        validate_value(&schema, &json!("-realm"), &field, "realm_id")
+            .expect("pattern is a UI hint, not a save blocker");
+        validate_value(&schema, &json!("a".repeat(65)), &field, "realm_id")
+            .expect("length is a UI hint, not a save blocker");
+    }
+
+    #[test]
+    fn string_list_constraints_are_non_blocking() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "short_id",
+            "label": "Short ID",
+            "kind": "string-list",
+            "maxLength": 16,
+            "pattern": "^([0-9A-Fa-f]{2}){0,8}$"
+        }));
+
+        validate_value(
+            &schema,
+            &json!(["", "0123456789abcdef"]),
+            &field,
+            "short_id",
+        )
+        .expect("empty and 8-byte hex short IDs should validate");
+        validate_value(&schema, &json!(["abc"]), &field, "short_id")
+            .expect("pattern is a UI hint, not a save blocker");
+        validate_value(&schema, &json!(["0123456789abcdef00"]), &field, "short_id")
+            .expect("length is a UI hint, not a save blocker");
+    }
+
+    #[test]
+    fn string_or_object_list_accepts_scalar_and_array_forms() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "verify_client_url",
+            "label": "Verify client URL",
+            "kind": "string-or-object-list",
+            "fields": [
+                {
+                    "key": "url",
+                    "label": "URL",
+                    "kind": "string"
+                }
+            ]
+        }));
+
+        validate_value(
+            &schema,
+            &json!("https://example.com"),
+            &field,
+            "verify_client_url",
+        )
+        .expect("string scalar should validate");
+        validate_value(
+            &schema,
+            &json!({"url": "https://example.com"}),
+            &field,
+            "verify_client_url",
+        )
+        .expect("object scalar should validate");
+        validate_value(
+            &schema,
+            &json!(["https://example.com", {"url": "https://example.net"}]),
+            &field,
+            "verify_client_url",
+        )
+        .expect("mixed array should validate");
+        validate_value(&schema, &json!([1]), &field, "verify_client_url")
+            .expect("schema type gaps should not block saves");
+    }
+
+    #[test]
+    fn object_list_accepts_single_object_for_listable_fields() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "mesh_with",
+            "label": "Mesh with",
+            "kind": "object-list",
+            "fields": [
+                {
+                    "key": "server",
+                    "label": "Server",
+                    "kind": "string"
+                }
+            ]
+        }));
+
+        validate_value(
+            &schema,
+            &json!({"server": "derp.example"}),
+            &field,
+            "mesh_with",
+        )
+        .expect("single object should validate");
+        validate_value(
+            &schema,
+            &json!([{"server": "derp-a.example"}, {"server": "derp-b.example"}]),
+            &field,
+            "mesh_with",
+        )
+        .expect("object array should validate");
+        validate_value(&schema, &json!("derp.example"), &field, "mesh_with")
+            .expect("schema type gaps should not block saves");
+    }
+
+    #[test]
+    fn string_or_number_constraints_are_non_blocking() {
+        let schema = empty_schema();
+        let field = field(json!({
+            "key": "rcode",
+            "label": "RCODE",
+            "kind": "string-or-number",
+            "allowedValues": ["NOERROR", "REFUSED"],
+            "integer": true,
+            "min": 0,
+            "max": 65535
+        }));
+
+        validate_value(&schema, &json!("NOERROR"), &field, "rcode")
+            .expect("allowed rcode string should validate");
+        validate_value(&schema, &json!(3), &field, "rcode").expect("numeric rcode should validate");
+        validate_value(&schema, &json!("BADRCODE"), &field, "rcode")
+            .expect("allowed values are UI hints, not save blockers");
+        validate_value(&schema, &json!(-1), &field, "rcode")
+            .expect("bounds are UI hints, not save blockers");
+        validate_value(&schema, &json!(1.5), &field, "rcode")
+            .expect("integer is a UI hint, not a save blocker");
+    }
+
+    #[test]
+    fn constraint_fields_are_non_blocking() {
+        let schema = empty_schema();
+        let fields: Vec<SchemaField> = serde_json::from_value(json!([
+            {
+                "key": "action",
+                "label": "Action",
+                "kind": "select",
+                "options": ["route", "route-options"]
+            },
+            {
+                "key": "_route_options_requires_any",
+                "label": "route-options requires one option",
+                "kind": "constraint",
+                "requiresAny": ["override_address", "tls_fragment"],
+                "visibleWhen": [
+                    {
+                        "key": "action",
+                        "op": "equals",
+                        "value": "route-options"
+                    }
+                ]
+            },
+            {
+                "key": "override_address",
+                "label": "Override Address",
+                "kind": "string"
+            },
+            {
+                "key": "tls_fragment",
+                "label": "TLS Fragment",
+                "kind": "boolean"
+            }
+        ]))
+        .expect("test fields should deserialize");
+
+        let empty = json!({
+            "action": "route-options"
+        });
+        validate_object_against_fields(
+            &schema,
+            empty.as_object().expect("object"),
+            &fields,
+            "rule",
+            &[],
+            true,
+        )
+        .expect("constraints are UI hints, not save blockers");
+
+        let with_option = json!({
+            "action": "route-options",
+            "tls_fragment": true
+        });
+        validate_object_against_fields(
+            &schema,
+            with_option.as_object().expect("object"),
+            &fields,
+            "rule",
+            &[],
+            true,
+        )
+        .expect("constraint should accept one populated option");
+    }
+
+    #[test]
+    fn duplicate_key_fields_do_not_block_raw_overrides() {
+        let schema = empty_schema();
+        let fields: Vec<SchemaField> = serde_json::from_value(json!([
+            {
+                "key": "engine",
+                "label": "Engine",
+                "kind": "select",
+                "options": ["", "go", "apple"]
+            },
+            {
+                "key": "tls",
+                "label": "Apple TLS",
+                "kind": "object",
+                "visibleWhen": [
+                    {
+                        "key": "engine",
+                        "op": "equals",
+                        "value": "apple"
+                    }
+                ],
+                "fields": [
+                    {
+                        "key": "server_name",
+                        "label": "Server Name",
+                        "kind": "string"
+                    }
+                ]
+            },
+            {
+                "key": "tls",
+                "label": "Go TLS",
+                "kind": "object",
+                "visibleWhen": [
+                    {
+                        "key": "engine",
+                        "op": "not-equals",
+                        "value": "apple"
+                    }
+                ],
+                "fields": [
+                    {
+                        "key": "enabled",
+                        "label": "Enabled",
+                        "kind": "boolean"
+                    }
+                ]
+            }
+        ]))
+        .expect("test fields should deserialize");
+
+        let apple_value = json!({
+            "engine": "apple",
+            "tls": {
+                "server_name": "example.com"
+            }
+        });
+        validate_object_against_fields(
+            &schema,
+            apple_value.as_object().expect("object"),
+            &fields,
+            "http_client",
+            &[],
+            true,
+        )
+        .expect("apple branch should validate");
+
+        let apple_conflict = json!({
+            "engine": "apple",
+            "tls": {
+                "enabled": true
+            }
+        });
+        validate_object_against_fields(
+            &schema,
+            apple_conflict.as_object().expect("object"),
+            &fields,
+            "http_client",
+            &[],
+            true,
+        )
+        .expect("raw branch overrides are preserved instead of blocked");
+
+        let go_value = json!({
+            "engine": "go",
+            "tls": {
+                "enabled": true
+            }
+        });
+        validate_object_against_fields(
+            &schema,
+            go_value.as_object().expect("object"),
+            &fields,
+            "http_client",
+            &[],
+            true,
+        )
+        .expect("go branch should validate");
     }
 }

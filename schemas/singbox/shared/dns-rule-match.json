@@ -9,20 +9,21 @@
     "label": "IP 版本",
     "kind": "select",
     "valueType": "number",
+    "integer": true,
     "options": ["", "4", "6"]
   },
   {
     "key": "query_type",
     "label": "查询类型",
-    "kind": "json",
+    "kind": "string-or-number-list",
     "wide": true,
     "placeholder": "[\"A\", \"AAAA\", 32768]"
   },
   {
     "key": "network",
     "label": "网络",
-    "kind": "select",
-    "options": ["", "tcp", "udp"]
+    "kind": "string-list",
+    "allowedValues": ["tcp", "udp"]
   },
   {
     "key": "auth_user",
@@ -55,6 +56,21 @@
     "kind": "string-list"
   },
   {
+    "key": "geosite",
+    "label": "Geosite",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_geoip",
+    "label": "来源 GeoIP",
+    "kind": "string-list"
+  },
+  {
+    "key": "geoip",
+    "label": "GeoIP",
+    "kind": "string-list"
+  },
+  {
     "key": "source_ip_cidr",
     "label": "来源 CIDR",
     "kind": "string-list"
@@ -68,6 +84,7 @@
     "key": "source_port",
     "label": "来源端口",
     "kind": "number-list",
+    "integer": true,
     "min": 0,
     "max": 65535
   },
@@ -80,6 +97,7 @@
     "key": "port",
     "label": "目标端口",
     "kind": "number-list",
+    "integer": true,
     "min": 0,
     "max": 65535
   },
@@ -121,7 +139,8 @@
   {
     "key": "user_id",
     "label": "用户 ID",
-    "kind": "number-list"
+    "kind": "number-list",
+    "integer": true
   },
   {
     "key": "outbound",
@@ -153,12 +172,14 @@
     "key": "interface_address",
     "label": "接口地址",
     "kind": "map",
+    "valueType": "string-list",
     "wide": true
   },
   {
     "key": "network_interface_address",
     "label": "网络接口地址",
     "kind": "map",
+    "valueType": "string-list",
     "wide": true
   },
   {
@@ -202,6 +223,16 @@
     "kind": "boolean"
   },
   {
+    "key": "rule_set_ip_cidr_accept_empty",
+    "label": "rule_set_ip_cidr_accept_empty",
+    "kind": "boolean"
+  },
+  {
+    "key": "rule_set_ipcidr_match_source",
+    "label": "rule_set_ipcidr_match_source",
+    "kind": "boolean"
+  },
+  {
     "key": "match_response",
     "label": "匹配响应",
     "kind": "boolean"
@@ -224,9 +255,12 @@
   {
     "key": "response_rcode",
     "label": "响应 RCODE",
-    "kind": "select",
-    "options": [
-      "",
+    "kind": "string-or-number",
+    "integer": true,
+    "min": 0,
+    "max": 65535,
+    "placeholder": "NOERROR 或 0",
+    "allowedValues": [
       "NOERROR",
       "FORMERR",
       "SERVFAIL",

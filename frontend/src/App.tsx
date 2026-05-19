@@ -1,9 +1,11 @@
 import {
+  Bot,
   Braces,
   ChevronDown,
   ChevronRight,
   Code2,
   Download,
+  ExternalLink,
   FileCode2,
   History,
   Layers3,
@@ -13,14 +15,17 @@ import {
   Route,
   Save,
   Server,
+  Settings,
   SlidersHorizontal,
   Trash2,
   UploadCloud,
+  X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type * as React from "react";
 import YAML from "yaml";
 
+import { AgentSidebar } from "./AgentSidebar";
 import { Badge } from "./components/ui/Badge";
 import { Button } from "./components/ui/Button";
 import { CheckField, Field } from "./components/ui/Field";
@@ -28,25 +33,45 @@ import { Input, Select, Textarea } from "./components/ui/Input";
 import { fetchJson } from "./lib/api";
 import {
   EMPTY_COMPOSER_SCHEMA,
+  changeCertificateProviderType,
   changeDnsRuleType,
   changeDnsServerType,
+  changeEndpointType,
   changeInboundType,
   changeOutboundType,
+  changeRouteRuleSetType,
+  changeRouteRuleType,
+  changeServiceType,
   changeTypedListItemType,
+  createCertificateProvider as createTypedCertificateProvider,
   createInbound as createTypedInbound,
   createDnsRule,
   createDnsServer,
+  createEndpoint as createTypedEndpoint,
   createOutboundNode as createTypedOutboundNode,
+  createRouteRule,
+  createRouteRuleSet,
+  createService as createTypedService,
   createTypedListItem,
   defaultValueForField,
   getDnsRuleSchema,
   getDnsRuleTypeOptions,
   getDnsServerSchema,
   getDnsServerTypeOptions,
+  getEndpointSchema,
+  getEndpointTypeOptions,
+  getCertificateProviderSchema,
+  getCertificateProviderTypeOptions,
   getInboundSchema,
   getInboundTypeOptions,
   getOutboundSchema,
   getOutboundTypeOptions,
+  getRouteRuleSetSchema,
+  getRouteRuleSetTypeOptions,
+  getRouteRuleSchema,
+  getRouteRuleTypeOptions,
+  getServiceSchema,
+  getServiceTypeOptions,
   getTypedListDefaultType,
   getTypedListItemSchema,
   getTypedListTypeOptions,
@@ -55,13 +80,23 @@ import {
   normalizeComposerSchema,
   sanitizeDnsRule,
   sanitizeDnsServer,
+  sanitizeEndpoint,
+  sanitizeCertificateProvider,
   sanitizeInbound,
+  sanitizeRouteRuleSet,
+  sanitizeRouteRule,
+  sanitizeService,
   sanitizeFields,
   sanitizeTypedListItem,
   sanitizeOutboundNode,
   validateDnsRule,
   validateDnsServer,
+  validateEndpoint,
+  validateCertificateProvider,
   validateInbound,
+  validateRouteRuleSet,
+  validateRouteRule,
+  validateService,
   validateFields,
   validateOutboundNode,
   validateTypedListItem,
@@ -71,6 +106,8 @@ import {
 } from "./singboxSchema";
 import type {
   ComposerState,
+  AppSettings,
+  GlobalConfig,
   NameRewriteRule,
   ProxyGroup,
   ProxySource,
@@ -80,6 +117,7 @@ import type {
   TargetEntryKind,
   TargetGroup,
   DnsConfig,
+  RouteConfig,
   VersionSummary,
 } from "./types";
 
@@ -87,6 +125,12 @@ type Page =
   | "sources"
   | "groups"
   | "targets"
+  | "global"
+  | "endpoints"
+  | "http_clients"
+  | "certificates"
+  | "services"
+  | "extra_routes"
   | "inbounds"
   | "dns"
   | "base"
@@ -94,12 +138,31 @@ type Page =
 type LocalMode = "form" | "json" | "yaml";
 type Status = { kind: "ok" | "error" | "info"; message: string } | null;
 
+const defaultAppSettings: AppSettings = {
+  network: {
+    proxy: {
+      enabled: false,
+      url: "",
+    },
+    github: {
+      api_url: "https://api.github.com",
+      token: "",
+    },
+  },
+};
+
 const pages: Array<{ key: Page; label: string; icon: typeof Layers3 }> = [
   { key: "sources", label: "代理源", icon: UploadCloud },
   { key: "groups", label: "代理组", icon: Layers3 },
   { key: "targets", label: "出站目标", icon: Route },
-  { key: "inbounds", label: "入站配置", icon: Server },
+  { key: "extra_routes", label: "额外路由规则", icon: Route },
   { key: "dns", label: "DNS", icon: Server },
+  { key: "inbounds", label: "入站配置", icon: Server },
+  { key: "endpoints", label: "端点配置", icon: Server },
+  { key: "http_clients", label: "HTTP 客户端", icon: Server },
+  { key: "certificates", label: "证书配置", icon: Server },
+  { key: "services", label: "服务配置", icon: Server },
+  { key: "global", label: "全局配置", icon: SlidersHorizontal },
   { key: "base", label: "基础配置", icon: SlidersHorizontal },
   { key: "output", label: "生成配置", icon: FileCode2 },
 ];
@@ -160,21 +223,218 @@ const composerName = "Composer";
 const composerDescription = "The foundation that lets you sing";
 
 function withFixedMetadata(state: ComposerState): ComposerState {
+  const metadata = (isRecord(state.metadata) ? state.metadata : {}) as JsonObject;
+  const dns = (isRecord(state.dns) ? state.dns : {}) as JsonObject;
+  const global = (isRecord(state.global) ? state.global : {}) as JsonObject;
+  const route = (isRecord(state.route) ? state.route : {}) as JsonObject;
   return {
     ...state,
-    dns: state.dns ?? {
-      enabled: false,
-      options: {},
-      servers: [],
-      rules: [],
+    version: typeof state.version === "number" ? state.version : 1,
+    base_config: isRecord(state.base_config) ? state.base_config : {},
+    dns: {
+      enabled: dns.enabled === true,
+      options: isRecord(dns.options) ? dns.options : {},
+      servers: asObjectArray(dns.servers),
+      rules: asObjectArray(dns.rules),
     },
-    inbounds: state.inbounds ?? [],
+    global: {
+      log: isRecord(global.log) ? global.log : {},
+      ntp: isRecord(global.ntp) ? global.ntp : {},
+      experimental: isRecord(global.experimental) ? global.experimental : {},
+    },
+    route: {
+      options: isRecord(route.options) ? route.options : {},
+      rule_sets: asObjectArray(route.rule_sets),
+    },
+    inbounds: asObjectArray(state.inbounds),
+    endpoints: asObjectArray(state.endpoints),
+    http_clients: asObjectArray(state.http_clients),
+    certificate: isRecord(state.certificate) ? state.certificate : {},
+    certificate_providers: asObjectArray(state.certificate_providers),
+    services: asObjectArray(state.services),
+    extra_route_rules: asObjectArray(state.extra_route_rules),
+    proxy_sources: normalizeProxySources(state.proxy_sources),
+    proxy_groups: normalizeProxyGroups(state.proxy_groups),
+    target_groups: normalizeTargetGroups(state.target_groups),
     metadata: {
-      ...state.metadata,
+      ...metadata,
       name: composerName,
       description: composerDescription,
     },
   };
+}
+
+function normalizeProxySources(value: unknown): ProxySource[] {
+  return Array.isArray(value)
+    ? value.filter(isRecord).map((source, index) => {
+        const subscription = isRecord(source.subscription)
+          ? source.subscription
+          : {};
+        return {
+          id: asString(source.id, `source-${index + 1}`),
+          name: asString(source.name, `Source ${index + 1}`),
+          enabled: source.enabled !== false,
+          kind: source.kind === "subscription" ? "subscription" : "manual",
+          prefix: asString(source.prefix, ""),
+          name_rewrites: Array.isArray(source.name_rewrites)
+            ? source.name_rewrites.filter(isRecord).map((rule) => ({
+                pattern: asString(rule.pattern, ""),
+                replacement: asString(rule.replacement, ""),
+              }))
+            : [],
+          subscription: {
+            url: asString(subscription.url, ""),
+            user_agent: asString(subscription.user_agent, "composer/0.1"),
+            skip_tls_verify: subscription.skip_tls_verify === true,
+            last_fetch_at:
+              typeof subscription.last_fetch_at === "string"
+                ? subscription.last_fetch_at
+                : null,
+          },
+          nodes: asObjectArray(source.nodes),
+        };
+      })
+    : [];
+}
+
+function normalizeProxyGroups(value: unknown): ProxyGroup[] {
+  return Array.isArray(value)
+    ? value.filter(isRecord).map((group, index) => ({
+        id: asString(group.id, `group-${index + 1}`),
+        tag: asString(group.tag, `Group ${index + 1}`),
+        enabled: group.enabled !== false,
+        group_type: group.group_type === "url_test" ? "url_test" : "selector",
+        source_ids: asStringArray(group.source_ids),
+        match_regexes: asStringArray(group.match_regexes),
+        include_groups: asStringArray(group.include_groups),
+        include_special: asSpecialArray(group.include_special),
+        default: asString(group.default, ""),
+        url: asString(group.url, "https://www.gstatic.com/generate_204"),
+        interval: asString(group.interval, "3m"),
+        tolerance:
+          typeof group.tolerance === "number" && Number.isFinite(group.tolerance)
+            ? group.tolerance
+            : 50,
+        idle_timeout: asString(group.idle_timeout, "30m"),
+        interrupt_exist_connections:
+          group.interrupt_exist_connections === true,
+      }))
+    : [];
+}
+
+function normalizeTargetGroups(value: unknown): TargetGroup[] {
+  return Array.isArray(value)
+    ? value.filter(isRecord).map((target, index) => ({
+        id: asString(target.id, `target-${index + 1}`),
+        name: asString(target.name, `Target ${index + 1}`),
+        enabled: target.enabled !== false,
+        outbound: asString(target.outbound, ""),
+        entries: normalizeTargetEntries(target.entries),
+      }))
+    : [];
+}
+
+function normalizeTargetEntries(value: unknown): TargetEntry[] {
+  return Array.isArray(value)
+    ? value.filter(isRecord).map((entry, index) => {
+        const kind = targetKinds.includes(entry.kind as TargetEntryKind)
+          ? (entry.kind as TargetEntryKind)
+          : "domain_suffix";
+        return {
+          id: asString(entry.id, `entry-${index + 1}`),
+          label: asString(entry.label, ""),
+          kind,
+          values: asStringArray(entry.values),
+          invert: entry.invert === true,
+          raw: isRecord(entry.raw) ? entry.raw : {},
+        };
+      })
+    : [];
+}
+
+function asObjectArray(value: unknown): JsonObject[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
+function asSpecialArray(value: unknown): Array<"DIRECT" | "REJECT"> {
+  return Array.isArray(value)
+    ? value.filter((item): item is "DIRECT" | "REJECT" =>
+        item === "DIRECT" || item === "REJECT",
+      )
+    : [];
+}
+
+function asString(value: unknown, fallback: string): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function normalizeAppSettings(value: unknown): AppSettings {
+  const raw = isRecord(value) ? value : {};
+  const network = isRecord(raw.network) ? raw.network : {};
+  const proxy = isRecord(network.proxy) ? network.proxy : {};
+  const github = isRecord(network.github) ? network.github : {};
+  return {
+    network: {
+      proxy: {
+        enabled:
+          typeof proxy.enabled === "boolean"
+            ? proxy.enabled
+            : defaultAppSettings.network.proxy.enabled,
+        url:
+          typeof proxy.url === "string"
+            ? proxy.url
+            : defaultAppSettings.network.proxy.url,
+      },
+      github: {
+        api_url:
+          typeof github.api_url === "string"
+            ? github.api_url
+            : defaultAppSettings.network.github.api_url,
+        token:
+          typeof github.token === "string"
+            ? github.token
+            : defaultAppSettings.network.github.token,
+      },
+    },
+  };
+}
+
+function githubTokenCreationUrl(apiUrl: string): string {
+  const baseUrl = githubWebUrlFromApi(apiUrl);
+  const params = new URLSearchParams({
+    name: `Composer sing-box docs ${new Date().toISOString().slice(0, 10)}`,
+    description: "Composer reads sing-box documentation from GitHub.",
+    expires_in: "90",
+    contents: "read",
+    metadata: "read",
+  });
+  return `${baseUrl}/settings/personal-access-tokens/new?${params.toString()}`;
+}
+
+function githubWebUrlFromApi(apiUrl: string): string {
+  try {
+    const url = new URL(apiUrl.trim() || "https://api.github.com");
+    if (url.hostname === "api.github.com") {
+      return "https://github.com";
+    }
+    url.pathname = url.pathname
+      .replace(/\/api\/v3\/?$/, "")
+      .replace(/\/api\/?$/, "")
+      .replace(/\/+$/, "");
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return "https://github.com";
+  }
+}
+
+function isRecord(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export default function App() {
@@ -186,6 +446,10 @@ export default function App() {
   const [status, setStatus] = useState<Status>(null);
   const [busy, setBusy] = useState(false);
   const [versionDialogOpen, setVersionDialogOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(defaultAppSettings);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
   const [versions, setVersions] = useState<VersionSummary[]>([]);
   const [versionName, setVersionName] = useState("");
   const [versionDescription, setVersionDescription] = useState("");
@@ -196,6 +460,15 @@ export default function App() {
   const [selectedNodeIndex, setSelectedNodeIndex] = useState(0);
   const [selectedEntryIndex, setSelectedEntryIndex] = useState(0);
   const [selectedInboundIndex, setSelectedInboundIndex] = useState(0);
+  const [selectedEndpointIndex, setSelectedEndpointIndex] = useState(0);
+  const [selectedHttpClientIndex, setSelectedHttpClientIndex] = useState(0);
+  const [selectedCertificateProviderIndex, setSelectedCertificateProviderIndex] =
+    useState(0);
+  const [selectedServiceIndex, setSelectedServiceIndex] = useState(0);
+  const [selectedRouteRuleSetIndex, setSelectedRouteRuleSetIndex] =
+    useState(0);
+  const [selectedExtraRouteRuleIndex, setSelectedExtraRouteRuleIndex] =
+    useState(0);
   const [selectedDnsServerIndex, setSelectedDnsServerIndex] = useState(0);
   const [selectedDnsRuleIndex, setSelectedDnsRuleIndex] = useState(0);
   const [output, setOutput] = useState("");
@@ -348,6 +621,39 @@ export default function App() {
     void loadVersions();
   };
 
+  const loadSettings = async () => {
+    setSettingsBusy(true);
+    try {
+      setSettings(normalizeAppSettings(await fetchJson<AppSettings>("/api/settings")));
+    } catch (error) {
+      setStatus({ kind: "error", message: errorMessage(error) });
+    } finally {
+      setSettingsBusy(false);
+    }
+  };
+
+  const openSettings = () => {
+    setSettingsDialogOpen(true);
+    void loadSettings();
+  };
+
+  const saveSettings = async () => {
+    setSettingsBusy(true);
+    try {
+      const next = await fetchJson<AppSettings>("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify(settings),
+      });
+      setSettings(normalizeAppSettings(next));
+      setStatus({ kind: "ok", message: "设置已保存" });
+      setSettingsDialogOpen(false);
+    } catch (error) {
+      setStatus({ kind: "error", message: errorMessage(error) });
+    } finally {
+      setSettingsBusy(false);
+    }
+  };
+
   const createVersion = async () => {
     setVersionBusy(true);
     try {
@@ -481,6 +787,47 @@ export default function App() {
     }
   };
 
+  const replaceWorkingState = (next: ComposerState): ComposerState => {
+    const fixed = withFixedMetadata(next);
+    setState(fixed);
+    return fixed;
+  };
+
+  const adoptSavedState = (next: ComposerState): ComposerState => {
+    const fixed = withFixedMetadata(next);
+    adoptState(fixed);
+    return fixed;
+  };
+
+  const reloadForAgent = async (): Promise<ComposerState | null> => {
+    setBusy(true);
+    try {
+      const [nextSchema, next] = await Promise.all([
+        fetchJson<ComposerSchema>("/api/schema"),
+        fetchJson<ComposerState>("/api/state"),
+      ]);
+      setSchema(normalizeComposerSchema(nextSchema));
+      const fixed = withFixedMetadata(next);
+      adoptState(fixed);
+      setStatus({ kind: "ok", message: "Agent 已重新加载状态" });
+      return fixed;
+    } catch (error) {
+      setStatus({ kind: "error", message: errorMessage(error) });
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setGeneratedForAgent = (
+    config: JsonObject,
+    resolvedState: ResolvedState,
+  ) => {
+    setOutput(JSON.stringify(config, null, 2));
+    setResolved(resolvedState);
+    setStatus({ kind: "ok", message: "Agent 已生成 sing-box 配置" });
+  };
+
   const downloadHref = useMemo(() => {
     if (!output) {
       return "";
@@ -489,6 +836,43 @@ export default function App() {
       new Blob([output], { type: "application/json" }),
     );
   }, [output]);
+
+  const agentSelection = useMemo(
+    () => ({
+      page,
+      selectedSourceId,
+      selectedGroupId,
+      selectedTargetId,
+      selectedNodeIndex,
+      selectedEntryIndex,
+      selectedInboundIndex,
+      selectedEndpointIndex,
+      selectedHttpClientIndex,
+      selectedCertificateProviderIndex,
+      selectedServiceIndex,
+      selectedRouteRuleSetIndex,
+      selectedExtraRouteRuleIndex,
+      selectedDnsServerIndex,
+      selectedDnsRuleIndex,
+    }),
+    [
+      page,
+      selectedSourceId,
+      selectedGroupId,
+      selectedTargetId,
+      selectedNodeIndex,
+      selectedEntryIndex,
+      selectedInboundIndex,
+      selectedEndpointIndex,
+      selectedHttpClientIndex,
+      selectedCertificateProviderIndex,
+      selectedServiceIndex,
+      selectedRouteRuleSetIndex,
+      selectedExtraRouteRuleIndex,
+      selectedDnsServerIndex,
+      selectedDnsRuleIndex,
+    ],
+  );
 
   if (!state) {
     return (
@@ -518,7 +902,6 @@ export default function App() {
             </div>
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-2 lg:justify-end">
-            {status ? <StatusBadge status={status} /> : null}
             <Button variant="secondary" onClick={load} disabled={busy}>
               <RefreshCw size={16} />
               Reload
@@ -531,6 +914,17 @@ export default function App() {
               <History size={16} />
               版本
             </Button>
+            <Button variant="secondary" onClick={openSettings} disabled={busy}>
+              <Settings size={16} />
+              设置
+            </Button>
+            <Button
+              variant={agentOpen ? "primary" : "secondary"}
+              onClick={() => setAgentOpen((current) => !current)}
+            >
+              <Bot size={16} />
+              Agent
+            </Button>
             <Button variant="ghost" onClick={discard} disabled={busy || !dirty}>
               Discard
             </Button>
@@ -540,30 +934,10 @@ export default function App() {
             </Button>
           </div>
         </div>
-        <div className="mx-auto max-w-[1440px] px-4 pb-3">
-          <nav className="flex gap-2 overflow-x-auto rounded-md border border-border bg-white p-1">
-            {pages.map((item) => {
-              const Icon = item.icon;
-              const active = item.key === page;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => switchPage(item.key)}
-                  className={
-                    active
-                      ? "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground"
-                      : "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }
-                >
-                  <Icon size={16} />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
       </header>
+      {status ? (
+        <StatusBadge status={status} onClose={() => setStatus(null)} />
+      ) : null}
       {versionDialogOpen ? (
         <VersionManagerDialog
           versions={versions}
@@ -579,8 +953,58 @@ export default function App() {
           onClose={() => setVersionDialogOpen(false)}
         />
       ) : null}
+      {settingsDialogOpen ? (
+        <NetworkSettingsDialog
+          settings={settings}
+          busy={settingsBusy}
+          onChange={setSettings}
+          onReload={loadSettings}
+          onSave={saveSettings}
+          onClose={() => setSettingsDialogOpen(false)}
+        />
+      ) : null}
+      <AgentSidebar
+        open={agentOpen}
+        state={state}
+        schema={schema}
+        page={page}
+        dirty={dirty}
+        selection={agentSelection}
+        output={output}
+        resolved={resolved}
+        onClose={() => setAgentOpen(false)}
+        onReplaceState={replaceWorkingState}
+        onAdoptSavedState={adoptSavedState}
+        onSaveState={(next) => persistState(next)}
+        onReloadState={reloadForAgent}
+        onGeneratedConfig={setGeneratedForAgent}
+        onStatus={setStatus}
+      />
 
-      <div className="mx-auto max-w-[1440px] px-4 py-5">
+      <div className="mx-auto grid max-w-[1440px] grid-cols-[56px_minmax(0,1fr)] gap-3 px-3 py-4 sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-4 sm:px-4 sm:py-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-5">
+        <aside className="sticky top-[calc(var(--composer-sticky-top)+0.75rem)] min-w-0 max-h-[calc(100vh-var(--composer-sticky-top)-1.5rem)] sm:top-[calc(var(--composer-sticky-top)+1rem)] sm:max-h-[calc(100vh-var(--composer-sticky-top)-2rem)]">
+          <nav className="grid max-h-[inherit] min-w-0 content-start gap-1 overflow-y-auto rounded-md border border-border bg-white p-1 sm:p-2">
+            {pages.map((item) => {
+              const Icon = item.icon;
+              const active = item.key === page;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => switchPage(item.key)}
+                  className={
+                    active
+                      ? "inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md bg-primary px-0 text-left text-sm font-medium text-primary-foreground sm:justify-start sm:px-3"
+                      : "inline-flex min-h-10 w-full min-w-0 items-center justify-center gap-2 rounded-md px-0 text-left text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:justify-start sm:px-3"
+                  }
+                >
+                  <Icon className="shrink-0" size={16} />
+                  <span className="hidden truncate sm:block">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
         <div className="min-w-0">
           {page === "sources" ? (
             <ProxySourcesPage
@@ -609,6 +1033,60 @@ export default function App() {
               selectedEntryIndex={selectedEntryIndex}
               setSelectedId={setSelectedTargetId}
               setSelectedEntryIndex={setSelectedEntryIndex}
+              updateState={updateState}
+            />
+          ) : null}
+          {page === "global" ? (
+            <GlobalConfigPage
+              schema={schema}
+              global={state.global}
+              updateState={updateState}
+            />
+          ) : null}
+          {page === "endpoints" ? (
+            <EndpointsPage
+              schema={schema}
+              state={state}
+              selectedIndex={selectedEndpointIndex}
+              setSelectedIndex={setSelectedEndpointIndex}
+              updateState={updateState}
+            />
+          ) : null}
+          {page === "http_clients" ? (
+            <HttpClientsPage
+              schema={schema}
+              state={state}
+              selectedIndex={selectedHttpClientIndex}
+              setSelectedIndex={setSelectedHttpClientIndex}
+              updateState={updateState}
+            />
+          ) : null}
+          {page === "certificates" ? (
+            <CertificatesPage
+              schema={schema}
+              state={state}
+              selectedIndex={selectedCertificateProviderIndex}
+              setSelectedIndex={setSelectedCertificateProviderIndex}
+              updateState={updateState}
+            />
+          ) : null}
+          {page === "services" ? (
+            <ServicesPage
+              schema={schema}
+              state={state}
+              selectedIndex={selectedServiceIndex}
+              setSelectedIndex={setSelectedServiceIndex}
+              updateState={updateState}
+            />
+          ) : null}
+          {page === "extra_routes" ? (
+            <ExtraRouteRulesPage
+              schema={schema}
+              state={state}
+              selectedRuleSetIndex={selectedRouteRuleSetIndex}
+              selectedIndex={selectedExtraRouteRuleIndex}
+              setSelectedRuleSetIndex={setSelectedRouteRuleSetIndex}
+              setSelectedIndex={setSelectedExtraRouteRuleIndex}
               updateState={updateState}
             />
           ) : null}
@@ -646,6 +1124,141 @@ export default function App() {
         </div>
       </div>
     </main>
+  );
+}
+
+function NetworkSettingsDialog({
+  settings,
+  busy,
+  onChange,
+  onReload,
+  onSave,
+  onClose,
+}: {
+  settings: AppSettings;
+  busy: boolean;
+  onChange: (settings: AppSettings) => void;
+  onReload: () => void;
+  onSave: () => void;
+  onClose: () => void;
+}) {
+  const updateProxy = (patch: Partial<AppSettings["network"]["proxy"]>) => {
+    onChange({
+      ...settings,
+      network: {
+        ...settings.network,
+        proxy: {
+          ...settings.network.proxy,
+          ...patch,
+        },
+      },
+    });
+  };
+  const updateGithub = (patch: Partial<AppSettings["network"]["github"]>) => {
+    onChange({
+      ...settings,
+      network: {
+        ...settings.network,
+        github: {
+          ...settings.network.github,
+          ...patch,
+        },
+      },
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/30 px-4 py-8"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="grid w-full max-w-2xl gap-4 rounded-md border border-border bg-white p-4 shadow-xl">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">设置</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={onReload} disabled={busy}>
+              <RefreshCw size={16} />
+              重新加载
+            </Button>
+            <Button variant="ghost" onClick={onClose} disabled={busy}>
+              关闭
+            </Button>
+          </div>
+        </div>
+
+        <section className="grid gap-3 rounded-md border border-border bg-muted/20 p-3">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <h3 className="truncate text-sm font-semibold">后端代理</h3>
+            <CheckField
+              label="启用"
+              checked={settings.network.proxy.enabled}
+              onChange={(enabled) => updateProxy({ enabled })}
+            />
+          </div>
+          <Field label="代理 URL">
+            <Input
+              value={settings.network.proxy.url}
+              placeholder="http://user:pass@127.0.0.1:7890"
+              onChange={(event) => updateProxy({ url: event.target.value })}
+            />
+          </Field>
+        </section>
+
+        <section className="grid gap-3 rounded-md border border-border bg-muted/20 p-3">
+          <h3 className="text-sm font-semibold">GitHub API</h3>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <Field label="API URL">
+              <Input
+                value={settings.network.github.api_url}
+                placeholder="https://api.github.com"
+                onChange={(event) =>
+                  updateGithub({ api_url: event.target.value })
+                }
+              />
+            </Field>
+            <Field label="Token">
+              <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <Input
+                  type="password"
+                  value={settings.network.github.token}
+                  onChange={(event) =>
+                    updateGithub({ token: event.target.value })
+                  }
+                />
+                <a
+                  className="inline-flex h-9 max-w-full items-center justify-center gap-2 whitespace-nowrap rounded-md bg-secondary px-3 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
+                  href={githubTokenCreationUrl(settings.network.github.api_url)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="打开 GitHub 并预填 Composer 所需的只读 Token 权限"
+                >
+                  <ExternalLink size={15} />
+                  生成
+                </a>
+              </div>
+            </Field>
+          </div>
+        </section>
+
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            取消
+          </Button>
+          <Button onClick={onSave} disabled={busy}>
+            <Save size={16} />
+            保存
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -896,6 +1509,7 @@ function SourceDetail({
     Math.max(0, source.nodes.length - 1),
   );
   const selectedNode = source.nodes[safeNodeIndex] ?? null;
+  const nodesReadOnly = source.kind === "subscription";
 
   return (
     <section className="grid gap-4">
@@ -1019,10 +1633,19 @@ function SourceDetail({
 
           <RewriteEditor rewrites={source.name_rewrites} update={update} />
 
-          {source.kind === "manual" ? (
-            <Panel>
-              <div className="mb-3 flex items-center justify-between gap-3">
+          <Panel>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <h3 className="text-sm font-semibold">代理条目</h3>
+                {nodesReadOnly ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    订阅节点由刷新结果管理，列表只读
+                  </p>
+                ) : null}
+              </div>
+              {nodesReadOnly ? (
+                <Badge>只读</Badge>
+              ) : (
                 <Button
                   variant="secondary"
                   onClick={() => {
@@ -1037,68 +1660,82 @@ function SourceDetail({
                   <Plus size={16} />
                   Add
                 </Button>
-              </div>
-              <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-                <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
-                  <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold">节点列表</h4>
-                    <Badge>{source.nodes.length}</Badge>
-                  </div>
-                  <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
-                    {source.nodes.map((node, index) => {
-                      const tag =
-                        typeof node.tag === "string"
-                          ? node.tag
-                          : `node-${index + 1}`;
-                      const active = index === safeNodeIndex;
-                      return (
-                        <button
-                          key={`${tag}-${index}`}
-                          type="button"
-                          onClick={() => setSelectedNodeIndex(index)}
-                          className={
-                            active
-                              ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
-                              : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
-                          }
-                        >
-                          <span className="block truncate">{tag}</span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {String(node.type ?? "unknown")}
-                          </span>
-                        </button>
-                      );
-                    })}
-                    {source.nodes.length === 0 ? (
-                      <EmptyState label="No proxy nodes" />
-                    ) : null}
-                  </div>
-                </aside>
-                <div className="min-w-0">
-                  {selectedNode ? (
-                    <ProxyNodeEditor
-                      schemaRoot={schema}
-                      node={selectedNode}
-                      scopeKey={`${source.id}-${safeNodeIndex}`}
-                      onChange={(next) =>
-                        update(
-                          (draft) => void (draft.nodes[safeNodeIndex] = next),
-                        )
-                      }
-                      onDelete={() => {
-                        update((draft) => {
-                          draft.nodes.splice(safeNodeIndex, 1);
-                        });
-                        setSelectedNodeIndex(Math.max(0, safeNodeIndex - 1));
-                      }}
-                    />
-                  ) : (
-                    <EmptyState label="Select or add a proxy node" />
-                  )}
+              )}
+            </div>
+            <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+              <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+                <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+                  <h4 className="text-sm font-semibold">节点列表</h4>
+                  <Badge>{source.nodes.length}</Badge>
                 </div>
+                <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+                  {source.nodes.map((node, index) => {
+                    const tag =
+                      typeof node.tag === "string"
+                        ? node.tag
+                        : `node-${index + 1}`;
+                    const active = index === safeNodeIndex;
+                    return (
+                      <button
+                        key={`${tag}-${index}`}
+                        type="button"
+                        onClick={() => setSelectedNodeIndex(index)}
+                        className={
+                          active
+                            ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                            : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                        }
+                      >
+                        <span className="block truncate">{tag}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {String(node.type ?? "unknown")}
+                          {nodesReadOnly ? " · 只读" : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {source.nodes.length === 0 ? (
+                    <EmptyState
+                      label={
+                        nodesReadOnly
+                          ? "刷新订阅后显示代理节点"
+                          : "No proxy nodes"
+                      }
+                    />
+                  ) : null}
+                </div>
+              </aside>
+              <div className="min-w-0">
+                {selectedNode ? (
+                  <ProxyNodeEditor
+                    schemaRoot={schema}
+                    node={selectedNode}
+                    scopeKey={`${source.id}-${safeNodeIndex}`}
+                    readOnly={nodesReadOnly}
+                    onChange={(next) =>
+                      update(
+                        (draft) => void (draft.nodes[safeNodeIndex] = next),
+                      )
+                    }
+                    onDelete={() => {
+                      update((draft) => {
+                        draft.nodes.splice(safeNodeIndex, 1);
+                      });
+                      setSelectedNodeIndex(Math.max(0, safeNodeIndex - 1));
+                    }}
+                  />
+                ) : (
+                  <EmptyState
+                    label={
+                      nodesReadOnly
+                        ? "选择一个订阅代理节点"
+                        : "Select or add a proxy node"
+                    }
+                  />
+                )}
               </div>
-            </Panel>
-          ) : null}
+            </div>
+          </Panel>
         </>
       ) : (
         <Panel>
@@ -1118,12 +1755,14 @@ function ProxyNodeEditor({
   schemaRoot,
   node,
   scopeKey,
+  readOnly = false,
   onChange,
   onDelete,
 }: {
   schemaRoot: ComposerSchema;
   node: JsonObject;
   scopeKey: string;
+  readOnly?: boolean;
   onChange: (node: JsonObject) => void;
   onDelete: () => void;
 }) {
@@ -1139,10 +1778,14 @@ function ProxyNodeEditor({
         setMode={setMode}
         embedded
         actions={
-          <Button variant="danger" onClick={onDelete}>
-            <Trash2 size={16} />
-            Delete
-          </Button>
+          readOnly ? (
+            <Badge>只读</Badge>
+          ) : (
+            <Button variant="danger" onClick={onDelete}>
+              <Trash2 size={16} />
+              Delete
+            </Button>
+          )
         }
       />
       {mode === "form" ? (
@@ -1153,10 +1796,11 @@ function ProxyNodeEditor({
             schema={schema}
             errors={errors}
             onChange={onChange}
+            readOnly={readOnly}
           />
         ) : (
           <Panel>
-            <div className="grid gap-3">
+            <fieldset className="m-0 grid gap-3 border-0 p-0" disabled={readOnly}>
               <div className="text-sm text-destructive">
                 不支持的 sing-box 出站类型：{String(node.type ?? "")}
               </div>
@@ -1178,7 +1822,7 @@ function ProxyNodeEditor({
                 </Select>
               </Field>
               <ObjectFormEditor value={node} onChange={onChange} />
-            </div>
+            </fieldset>
           </Panel>
         )
       ) : (
@@ -1187,6 +1831,7 @@ function ProxyNodeEditor({
           scopeKey={`${scopeKey}-${mode}`}
           value={node}
           onApply={onChange}
+          readOnly={readOnly}
         />
       )}
     </div>
@@ -1199,12 +1844,14 @@ function ProxySchemaEditor({
   schema,
   errors,
   onChange,
+  readOnly = false,
 }: {
   schemaRoot: ComposerSchema;
   node: JsonObject;
   schema: { type: string; label: string; fields: SchemaField[] };
   errors: string[];
   onChange: (node: JsonObject) => void;
+  readOnly?: boolean;
 }) {
   const updateNode = (next: JsonObject) => {
     onChange(sanitizeOutboundNode(schemaRoot, { type: schema.type, ...next }));
@@ -1212,11 +1859,12 @@ function ProxySchemaEditor({
 
   return (
     <Panel>
-      <div className="grid gap-4">
+      <fieldset className="m-0 grid min-w-0 gap-4 border-0 p-0" disabled={readOnly}>
         <div className={formGridClass}>
           <Field label="类型">
             <Select
               value={schema.type}
+              disabled={readOnly}
               onChange={(event) =>
                 onChange(
                   changeOutboundType(schemaRoot, node, event.target.value),
@@ -1247,7 +1895,7 @@ function ProxySchemaEditor({
           fields={schema.fields}
           onChange={updateNode}
         />
-      </div>
+      </fieldset>
     </Panel>
   );
 }
@@ -1289,7 +1937,9 @@ function SchemaFieldsEditor({
     <div className="grid gap-4">
       <div className={formGridClass}>
         {fields.map((field) =>
-          isFlattenedField(field) || !isFieldVisible(field, value) ? null : (
+          field.kind === "constraint" ||
+          isFlattenedField(field) ||
+          !isFieldVisible(field, value) ? null : (
             <SchemaFieldEditor
               key={field.key}
               schemaRoot={schemaRoot}
@@ -1349,8 +1999,6 @@ function SchemaFieldEditor({
       <Field label={label} className={wideClass}>
         <Input
           type="number"
-          min={field.min}
-          max={field.max}
           value={value === undefined || value === null ? "" : String(value)}
           onChange={(event) =>
             onChange(
@@ -1364,11 +2012,27 @@ function SchemaFieldEditor({
     );
   }
 
+  if (field.kind === "string-or-number") {
+    return (
+      <Field label={label} className={wideClass}>
+        <Input
+          value={value === undefined || value === null ? "" : String(value)}
+          placeholder={field.placeholder}
+          onChange={(event) =>
+            onChange(parseStringOrNumberInput(event.target.value))
+          }
+        />
+      </Field>
+    );
+  }
+
   if (field.kind === "select") {
+    const currentValue =
+      value === undefined || value === null ? "" : String(value);
     return (
       <Field label={label} className={wideClass}>
         <Select
-          value={value === undefined || value === null ? "" : String(value)}
+          value={currentValue}
           onChange={(event) =>
             onChange(
               event.target.value === ""
@@ -1379,7 +2043,7 @@ function SchemaFieldEditor({
             )
           }
         >
-          {(field.options ?? []).map((option) => (
+          {fieldSelectOptions(field, currentValue).map((option) => (
             <option key={option || "empty"} value={option}>
               {option || "default"}
             </option>
@@ -1389,7 +2053,11 @@ function SchemaFieldEditor({
     );
   }
 
-  if (field.kind === "string-list" || field.kind === "number-list") {
+  if (
+    field.kind === "string-list" ||
+    field.kind === "number-list" ||
+    field.kind === "string-or-number-list"
+  ) {
     return (
       <Field label={label} className={wideClass}>
         <LineListTextarea
@@ -1401,6 +2069,8 @@ function SchemaFieldEditor({
                 ? undefined
                 : field.kind === "number-list"
                   ? values.map(Number).filter(Number.isFinite)
+                  : field.kind === "string-or-number-list"
+                    ? values.map(parseStringOrNumberListItem)
                   : values,
             );
           }}
@@ -1415,6 +2085,7 @@ function SchemaFieldEditor({
         <MapFieldEditor
           label={label}
           value={isJsonObject(value) ? value : {}}
+          valueType={field.valueType}
           onChange={(next) =>
             onChange(Object.keys(next).length === 0 ? undefined : next)
           }
@@ -1429,7 +2100,7 @@ function SchemaFieldEditor({
         <ObjectListField
           schemaRoot={schemaRoot}
           field={field}
-          value={Array.isArray(value) ? value : []}
+          value={objectListInputItems(value)}
           onChange={onChange}
         />
       </div>
@@ -1479,6 +2150,32 @@ function SchemaFieldEditor({
     return (
       <div className="md:col-span-2">
         <StringOrObjectField
+          schemaRoot={schemaRoot}
+          field={field}
+          value={value}
+          onChange={onChange}
+        />
+      </div>
+    );
+  }
+
+  if (field.kind === "string-or-object-list") {
+    return (
+      <div className="md:col-span-2">
+        <StringOrObjectListField
+          schemaRoot={schemaRoot}
+          field={field}
+          value={value}
+          onChange={onChange}
+        />
+      </div>
+    );
+  }
+
+  if (field.kind === "number-or-object") {
+    return (
+      <div className="md:col-span-2">
+        <NumberOrObjectField
           schemaRoot={schemaRoot}
           field={field}
           value={value}
@@ -1540,19 +2237,21 @@ function SchemaFieldEditor({
 }
 
 function schemaFieldLabel(field: SchemaField): string {
-  const status = field.required ? "必填" : "选填";
-  const range =
-    field.kind === "number"
-      ? [
-          field.min !== undefined ? `>=${field.min}` : "",
-          field.max !== undefined ? `<=${field.max}` : "",
-        ]
-          .filter(Boolean)
-          .join(", ")
-      : "";
-  return range
-    ? `${field.label}（${status}, ${range}）`
-    : `${field.label}（${status}）`;
+  return field.required ? field.label : `${field.label}（选填）`;
+}
+
+function fieldSelectOptions(field: SchemaField, currentValue: string): string[] {
+  const options = field.options ?? [];
+  if (currentValue === "" || options.includes(currentValue)) {
+    return options;
+  }
+  return [currentValue, ...options];
+}
+
+function schemaNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function headerEnabledField(fields: SchemaField[]): SchemaField | undefined {
@@ -1563,7 +2262,9 @@ function headerEnabledField(fields: SchemaField[]): SchemaField | undefined {
 
 function bodyFields(fields: SchemaField[]): SchemaField[] {
   return fields.filter(
-    (field) => !(field.key === "enabled" && field.kind === "boolean"),
+    (field) =>
+      field.kind !== "constraint" &&
+      !(field.key === "enabled" && field.kind === "boolean"),
   );
 }
 
@@ -1920,6 +2621,136 @@ function StringOrObjectField({
           }
         />
       </Field>
+  </NestedBox>
+  );
+}
+
+function NumberOrObjectField({
+  schemaRoot,
+  field,
+  value,
+  onChange,
+}: {
+  schemaRoot?: ComposerSchema;
+  field: SchemaField;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
+  const label = schemaFieldLabel(field);
+  const objectValue = isJsonObject(value) ? value : null;
+  const numberValue = numericInputValue(value);
+  const fields = field.fields ?? [];
+  const enabledField = headerEnabledField(fields);
+  const contentFields = bodyFields(fields);
+
+  if (!objectValue && numberValue === "") {
+    return (
+      <NestedBox
+        title={label}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => onChange(schemaNumber(field.min) ?? 0)}
+            >
+              <Plus size={16} />
+              Number
+            </Button>
+            <Button variant="ghost" onClick={() => onChange({})}>
+              Object
+            </Button>
+          </div>
+        }
+      >
+        <EmptyState label={field.required ? "未填写" : "未启用"} />
+      </NestedBox>
+    );
+  }
+
+  if (!objectValue) {
+    return (
+      <NestedBox
+        title={label}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" onClick={() => onChange({})}>
+              Object
+            </Button>
+            <Button variant="ghost" onClick={() => onChange(undefined)}>
+              <Trash2 size={16} />
+              Remove
+            </Button>
+          </div>
+        }
+      >
+        <Field label="Number">
+          <Input
+            type="number"
+            value={numberValue}
+            onChange={(event) =>
+              onChange(
+                event.target.value === ""
+                  ? undefined
+                  : Number(event.target.value),
+              )
+            }
+          />
+        </Field>
+      </NestedBox>
+    );
+  }
+
+  return (
+    <NestedBox
+      title={label}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <HeaderEnabledSwitch
+            field={enabledField}
+            value={objectValue}
+            onChange={(checked) => {
+              const next = setObjectBoolean(objectValue, enabledField!, checked);
+              const sanitized = sanitizeFields(next, fields, schemaRoot);
+              onChange(
+                Object.keys(sanitized).length === 0 ? undefined : sanitized,
+              );
+            }}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => onChange(schemaNumber(field.min) ?? 0)}
+          >
+            Number
+          </Button>
+          <Button variant="ghost" onClick={() => onChange(undefined)}>
+            <Trash2 size={16} />
+            Remove
+          </Button>
+        </div>
+      }
+    >
+      {contentFields.length > 0 ? (
+        <SchemaFieldsEditor
+          schemaRoot={schemaRoot}
+          value={objectValue}
+          fields={contentFields}
+          onChange={(next) => {
+            const sanitized = sanitizeFields(next, fields, schemaRoot);
+            onChange(
+              Object.keys(sanitized).length === 0 ? undefined : sanitized,
+            );
+          }}
+        />
+      ) : (
+        <EmptyState label="没有额外字段" />
+      )}
+      {validateFields(objectValue, fields, schemaRoot, `${field.label}.`).map(
+        (error) => (
+          <div key={error} className="text-sm text-destructive">
+            {error}
+          </div>
+        ),
+      )}
     </NestedBox>
   );
 }
@@ -2115,7 +2946,7 @@ function TypedListField({
                   }
                 >
                   <span className="block truncate">
-                    {summarizeDnsRule(item, index)}
+                    {summarizeTypedListItem(field, item, index)}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">
                     {String(item.type ?? "default")}
@@ -2207,7 +3038,7 @@ function TypedListItemEditor({
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
         <div className="min-w-0">
           <h4 className="truncate text-sm font-semibold">
-            {summarizeDnsRule(item, 0)}
+            {summarizeTypedListItem(field, item, 0)}
           </h4>
           <p className="truncate text-xs text-muted-foreground">
             {itemSchema.label}
@@ -2322,10 +3153,12 @@ function JsonValueEditor({
 function MapFieldEditor({
   label,
   value,
+  valueType,
   onChange,
 }: {
   label: string;
   value: JsonObject;
+  valueType?: SchemaField["valueType"];
   onChange: (value: JsonObject) => void;
 }) {
   const entries = Object.entries(value);
@@ -2345,7 +3178,7 @@ function MapFieldEditor({
     if (nextValue === "") {
       delete next[key];
     } else {
-      next[key] = nextValue;
+      next[key] = parseMapValue(nextValue, valueType);
     }
     onChange(next);
   };
@@ -2380,10 +3213,20 @@ function MapFieldEditor({
               defaultValue={key}
               onBlur={(event) => updateKey(key, event.target.value)}
             />
-            <Input
-              value={Array.isArray(item) ? item.join(", ") : String(item ?? "")}
-              onChange={(event) => updateValue(key, event.target.value)}
-            />
+            {valueType === "string-list" ? (
+              <LineListTextarea
+                value={mapValueLines(item)}
+                onChange={(values) =>
+                  updateValue(key, values.length === 0 ? "" : values.join("\n"))
+                }
+              />
+            ) : (
+              <Input
+                type={valueType === "number" ? "number" : "text"}
+                value={mapValueText(item)}
+                onChange={(event) => updateValue(key, event.target.value)}
+              />
+            )}
             <Button
               variant="ghost"
               onClick={() => {
@@ -2400,6 +3243,37 @@ function MapFieldEditor({
       </div>
     </NestedBox>
   );
+}
+
+function parseMapValue(
+  value: string,
+  valueType?: SchemaField["valueType"],
+): string | number | string[] {
+  if (valueType === "number") {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : value;
+  }
+  if (valueType === "string-list") {
+    return parseLines(value);
+  }
+  return value;
+}
+
+function mapValueText(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.join(", ");
+  }
+  return String(value ?? "");
+}
+
+function mapValueLines(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(String);
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    return [value];
+  }
+  return [];
 }
 
 function ObjectListField({
@@ -2548,6 +3422,209 @@ function ObjectListItemEditor({
         />
       ) : (
         <EmptyState label="Empty" />
+      )}
+    </div>
+  );
+}
+
+function StringOrObjectListField({
+  schemaRoot,
+  field,
+  value,
+  onChange,
+}: {
+  schemaRoot?: ComposerSchema;
+  field: SchemaField;
+  value: unknown;
+  onChange: (value: unknown) => void;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const fields = field.fields ?? [];
+  const items = stringOrObjectItems(value);
+  const safeIndex = Math.min(selectedIndex, Math.max(0, items.length - 1));
+  const selected = items[safeIndex] ?? null;
+
+  const replaceItems = (nextItems: Array<string | JsonObject>) => {
+    onChange(nextItems.length === 0 ? undefined : nextItems);
+  };
+
+  const addString = () => {
+    replaceItems([...items, ""]);
+    setSelectedIndex(items.length);
+  };
+
+  const addObject = () => {
+    const next = sanitizeFields(
+      initialObjectFromFields(fields),
+      fields,
+      schemaRoot,
+    );
+    replaceItems([...items, next]);
+    setSelectedIndex(items.length);
+  };
+
+  return (
+    <NestedBox
+      title={schemaFieldLabel(field)}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={addString}>
+            <Plus size={16} />
+            String
+          </Button>
+          <Button variant="secondary" onClick={addObject}>
+            <Plus size={16} />
+            Object
+          </Button>
+        </div>
+      }
+    >
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="min-w-0 rounded-md border border-border bg-muted/20 p-3">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+            <h4 className="text-sm font-semibold">{field.label}</h4>
+            <Badge>{items.length}</Badge>
+          </div>
+          <div className="grid max-h-72 min-w-0 content-start gap-2 overflow-y-auto pr-1">
+            {items.map((item, index) => {
+              const active = index === safeIndex;
+              return (
+                <button
+                  key={`string-object-list-${field.key}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedIndex(index)}
+                  className={
+                    active
+                      ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                      : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                  }
+                >
+                  <span className="block truncate">
+                    {summarizeStringOrObjectItem(item, index)}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {typeof item === "string" ? "string" : "object"}
+                  </span>
+                </button>
+              );
+            })}
+            {items.length === 0 ? <EmptyState label="Empty" /> : null}
+          </div>
+        </aside>
+        <div className="min-w-0">
+          {selected !== null ? (
+            <StringOrObjectListItemEditor
+              schemaRoot={schemaRoot}
+              field={field}
+              item={selected}
+              index={safeIndex}
+              onChange={(next) => {
+                const nextItems = [...items];
+                nextItems[safeIndex] = next;
+                replaceItems(nextItems);
+              }}
+              onDelete={() => {
+                const nextItems = items.filter(
+                  (_, index) => index !== safeIndex,
+                );
+                replaceItems(nextItems);
+                setSelectedIndex(Math.max(0, safeIndex - 1));
+              }}
+            />
+          ) : (
+            <EmptyState label="Select or add an item" />
+          )}
+        </div>
+      </div>
+    </NestedBox>
+  );
+}
+
+function StringOrObjectListItemEditor({
+  schemaRoot,
+  field,
+  item,
+  index,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot?: ComposerSchema;
+  field: SchemaField;
+  item: string | JsonObject;
+  index: number;
+  onChange: (value: string | JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const fields = field.fields ?? [];
+  const objectValue = isJsonObject(item) ? item : null;
+  const stringValue = typeof item === "string" ? item : "";
+  const errors = objectValue ? validateFields(objectValue, fields, schemaRoot) : [];
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+        <div className="min-w-0">
+          <h4 className="truncate text-sm font-semibold">
+            {summarizeStringOrObjectItem(item, index)}
+          </h4>
+          <p className="truncate text-xs text-muted-foreground">
+            {field.label} #{index + 1}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {objectValue ? (
+            <Button variant="ghost" onClick={() => onChange("")}>
+              String
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                onChange(
+                  sanitizeFields(
+                    initialObjectFromFields(fields),
+                    fields,
+                    schemaRoot,
+                  ),
+                )
+              }
+            >
+              Object
+            </Button>
+          )}
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        </div>
+      </div>
+      {errors.length > 0 ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {errors.map((error) => (
+            <div key={error}>{error}</div>
+          ))}
+        </div>
+      ) : null}
+      {objectValue ? (
+        fields.length > 0 ? (
+          <SchemaFieldsEditor
+            schemaRoot={schemaRoot}
+            value={objectValue}
+            fields={fields}
+            onChange={(next) =>
+              onChange(sanitizeFields(next, fields, schemaRoot))
+            }
+          />
+        ) : (
+          <EmptyState label="Empty" />
+        )
+      ) : (
+        <Field label="Value">
+          <Input
+            value={stringValue}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        </Field>
       )}
     </div>
   );
@@ -2757,7 +3834,42 @@ function NestedBox({
 }
 
 function arrayInputItems(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(String) : [];
+  if (Array.isArray(value)) {
+    return value.map(String);
+  }
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return [String(value)];
+  }
+  return [];
+}
+
+function numericInputValue(value: unknown): string {
+  return typeof value === "number" && Number.isFinite(value)
+    ? String(value)
+    : "";
+}
+
+function parseStringOrNumberListItem(value: string): string | number {
+  const trimmed = value.trim();
+  const number = Number(trimmed);
+  return Number.isInteger(number) && String(number) === trimmed
+    ? number
+    : trimmed;
+}
+
+function parseStringOrNumberInput(value: string): string | number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const number = Number(trimmed);
+  return Number.isInteger(number) && String(number) === trimmed
+    ? number
+    : value;
 }
 
 function pickFields(value: JsonObject, fields: SchemaField[]): JsonObject {
@@ -2773,6 +3885,9 @@ function pickFields(value: JsonObject, fields: SchemaField[]): JsonObject {
 function fieldKeys(fields: SchemaField[]): string[] {
   const keys: string[] = [];
   for (const field of fields) {
+    if (field.kind === "constraint") {
+      continue;
+    }
     if (isFlattenedField(field)) {
       keys.push(...fieldKeys(field.fields ?? []));
     } else {
@@ -2785,6 +3900,9 @@ function fieldKeys(fields: SchemaField[]): string[] {
 function initialObjectFromFields(fields: SchemaField[]): JsonObject {
   const output: JsonObject = {};
   for (const field of fields) {
+    if (field.kind === "constraint") {
+      continue;
+    }
     if (isFlattenedField(field)) {
       Object.assign(output, initialObjectFromFields(field.fields ?? []));
       continue;
@@ -2813,6 +3931,36 @@ function summarizeObjectValue(value: JsonObject, index: number): string {
     return `${server}:${port}`;
   }
   return `Item ${index + 1}`;
+}
+
+function stringOrObjectItems(value: unknown): Array<string | JsonObject> {
+  if (Array.isArray(value)) {
+    return value.filter(
+      (item): item is string | JsonObject =>
+        typeof item === "string" || isJsonObject(item),
+    );
+  }
+  if (typeof value === "string" || isJsonObject(value)) {
+    return [value];
+  }
+  return [];
+}
+
+function objectListInputItems(value: unknown): JsonObject[] {
+  if (Array.isArray(value)) {
+    return value.filter(isJsonObject);
+  }
+  return isJsonObject(value) ? [value] : [];
+}
+
+function summarizeStringOrObjectItem(
+  value: string | JsonObject,
+  index: number,
+): string {
+  if (typeof value === "string") {
+    return value.trim() || `Item ${index + 1}`;
+  }
+  return summarizeObjectValue(value, index);
 }
 
 function isJsonObject(value: unknown): value is JsonObject {
@@ -3504,6 +4652,1598 @@ function TargetEntryEditor({
         />
       )}
     </div>
+  );
+}
+
+function GlobalConfigPage({
+  schema,
+  global,
+  updateState,
+}: {
+  schema: ComposerSchema;
+  global: GlobalConfig;
+  updateState: (recipe: (draft: ComposerState) => void) => void;
+}) {
+  const globalSchema = schema.global;
+
+  if (!globalSchema) {
+    return <EmptyState label="Global schema unavailable" />;
+  }
+
+  return (
+    <section className="grid gap-4">
+      <GlobalSectionEditor
+        schemaRoot={schema}
+        title="日志"
+        subtitle="log"
+        value={global.log}
+        fields={globalSchema.log.fields}
+        scopeKey="global-log"
+        onChange={(next) =>
+          updateState((draft) => void (draft.global.log = next))
+        }
+      />
+      <GlobalSectionEditor
+        schemaRoot={schema}
+        title="NTP"
+        subtitle="ntp"
+        value={global.ntp}
+        fields={globalSchema.ntp.fields}
+        scopeKey="global-ntp"
+        onChange={(next) =>
+          updateState((draft) => void (draft.global.ntp = next))
+        }
+      />
+      <GlobalSectionEditor
+        schemaRoot={schema}
+        title="实验性功能"
+        subtitle="experimental"
+        value={global.experimental}
+        fields={globalSchema.experimental.fields}
+        scopeKey="global-experimental"
+        onChange={(next) =>
+          updateState((draft) => void (draft.global.experimental = next))
+        }
+      />
+    </section>
+  );
+}
+
+function GlobalSectionEditor({
+  schemaRoot,
+  title,
+  subtitle,
+  value,
+  fields,
+  scopeKey,
+  onChange,
+}: {
+  schemaRoot: ComposerSchema;
+  title: string;
+  subtitle: string;
+  value: JsonObject;
+  fields: SchemaField[];
+  scopeKey: string;
+  onChange: (value: JsonObject) => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const errors = validateFields(value, fields, schemaRoot);
+
+  return (
+    <Panel>
+      <div className="grid gap-4">
+        <DetailHeader
+          title={title}
+          subtitle={subtitle}
+          mode={mode}
+          setMode={setMode}
+          embedded
+        />
+        {mode === "form" ? (
+          <>
+            {errors.length > 0 ? (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {errors.map((error) => (
+                  <div key={error}>{error}</div>
+                ))}
+              </div>
+            ) : null}
+            <SchemaFieldsEditor
+              schemaRoot={schemaRoot}
+              value={value}
+              fields={fields}
+              onChange={(next) =>
+                onChange(sanitizeFields(next, fields, schemaRoot))
+              }
+            />
+          </>
+        ) : (
+          <StructuredCodeEditor
+            language={mode}
+            scopeKey={`${scopeKey}-${mode}`}
+            value={value}
+            onApply={onChange}
+          />
+        )}
+      </div>
+    </Panel>
+  );
+}
+
+function ExtraRouteRulesPage({
+  schema,
+  state,
+  selectedRuleSetIndex,
+  selectedIndex,
+  setSelectedRuleSetIndex,
+  setSelectedIndex,
+  updateState,
+}: {
+  schema: ComposerSchema;
+  state: ComposerState;
+  selectedRuleSetIndex: number;
+  selectedIndex: number;
+  setSelectedRuleSetIndex: (index: number) => void;
+  setSelectedIndex: (index: number) => void;
+  updateState: (recipe: (draft: ComposerState) => void) => void;
+}) {
+  const route = state.route;
+  const ruleSets = route.rule_sets ?? [];
+  const rules = state.extra_route_rules ?? [];
+  const safeRuleSetIndex = Math.min(
+    selectedRuleSetIndex,
+    Math.max(0, ruleSets.length - 1),
+  );
+  const safeIndex = Math.min(selectedIndex, Math.max(0, rules.length - 1));
+  const selectedRuleSet = ruleSets[safeRuleSetIndex] ?? null;
+  const selected = rules[safeIndex] ?? null;
+
+  const addRuleSet = () => {
+    const ruleSet = newRouteRuleSet(schema, route);
+    updateState((draft) => {
+      draft.route.rule_sets.push(ruleSet);
+    });
+    setSelectedRuleSetIndex(ruleSets.length);
+  };
+
+  const addRule = () => {
+    const rule = newRouteRule(schema, state);
+    updateState((draft) => {
+      draft.extra_route_rules.push(rule);
+    });
+    setSelectedIndex(rules.length);
+  };
+
+  if (!schema.route) {
+    return <EmptyState label="Route schema unavailable" />;
+  }
+
+  return (
+    <section className="grid gap-4">
+      <Panel>
+        <RouteOptionsEditor
+          schema={schema}
+          route={route}
+          update={(recipe) => updateState((draft) => recipe(draft.route))}
+        />
+      </Panel>
+
+      <Panel>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">路由规则集</h2>
+            <p className="text-sm text-muted-foreground">
+              {ruleSets.length} rule sets
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={addRuleSet}
+            disabled={getRouteRuleSetTypeOptions(schema).length === 0}
+          >
+            <Plus size={16} />
+            Add
+          </Button>
+        </div>
+        <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+            <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">规则集列表</h3>
+              <Badge>{ruleSets.length}</Badge>
+            </div>
+            <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+              {ruleSets.map((ruleSet, index) => {
+                const active = index === safeRuleSetIndex;
+                return (
+                  <button
+                    key={`route-rule-set-${index}`}
+                    type="button"
+                    onClick={() => setSelectedRuleSetIndex(index)}
+                    className={
+                      active
+                        ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                        : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                    }
+                  >
+                    <span className="block truncate">
+                      {summarizeRouteRuleSet(ruleSet, index)}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {String(ruleSet.type ?? "inline")}
+                    </span>
+                  </button>
+                );
+              })}
+              {ruleSets.length === 0 ? (
+                <EmptyState label="No rule sets" />
+              ) : null}
+            </div>
+          </aside>
+          <div className="min-w-0">
+            {selectedRuleSet ? (
+              <RouteRuleSetEditor
+                schemaRoot={schema}
+                ruleSet={selectedRuleSet}
+                scopeKey={`route-rule-set-${safeRuleSetIndex}`}
+                onChange={(next) =>
+                  updateState(
+                    (draft) =>
+                      void (draft.route.rule_sets[safeRuleSetIndex] = next),
+                  )
+                }
+                onDelete={() => {
+                  updateState((draft) => {
+                    draft.route.rule_sets.splice(safeRuleSetIndex, 1);
+                  });
+                  setSelectedRuleSetIndex(Math.max(0, safeRuleSetIndex - 1));
+                }}
+              />
+            ) : (
+              <EmptyState label="Select or add a route rule set" />
+            )}
+          </div>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">额外路由规则</h2>
+            <p className="text-sm text-muted-foreground">
+              {rules.length} route rules
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={addRule}
+            disabled={getRouteRuleTypeOptions(schema).length === 0}
+          >
+            <Plus size={16} />
+            New
+          </Button>
+        </div>
+        <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+            <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">规则列表</h3>
+              <Badge>{rules.length}</Badge>
+            </div>
+            <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+              {rules.map((rule, index) => {
+                const active = index === safeIndex;
+                return (
+                  <button
+                    key={`extra-route-rule-${index}`}
+                    type="button"
+                    onClick={() => setSelectedIndex(index)}
+                    className={
+                      active
+                        ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                        : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                    }
+                  >
+                    <span className="block truncate">
+                      {summarizeRouteRule(rule, index)}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {String(rule.type ?? "default")} ·{" "}
+                      {String(rule.action ?? "route")}
+                    </span>
+                  </button>
+                );
+              })}
+              {rules.length === 0 ? (
+                <EmptyState label="No route rules" />
+              ) : null}
+            </div>
+          </aside>
+          <div className="min-w-0">
+            {selected ? (
+              <RouteRuleEditor
+                schemaRoot={schema}
+                rule={selected}
+                scopeKey={`extra-route-rule-${safeIndex}`}
+                onChange={(next) =>
+                  updateState(
+                    (draft) => void (draft.extra_route_rules[safeIndex] = next),
+                  )
+                }
+                onDelete={() => {
+                  updateState((draft) => {
+                    draft.extra_route_rules.splice(safeIndex, 1);
+                  });
+                  setSelectedIndex(Math.max(0, safeIndex - 1));
+                }}
+              />
+            ) : (
+              <EmptyState label="Select or add a route rule" />
+            )}
+          </div>
+        </div>
+      </Panel>
+    </section>
+  );
+}
+
+function RouteOptionsEditor({
+  schema,
+  route,
+  update,
+}: {
+  schema: ComposerSchema;
+  route: RouteConfig;
+  update: (recipe: (route: RouteConfig) => void) => void;
+}) {
+  const fields = schema.route?.options.fields ?? [];
+  const options = (route.options ?? {}) as JsonObject;
+  const errors = validateFields(options, fields, schema);
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <div className="border-b border-border pb-3">
+        <h3 className="text-sm font-semibold">路由基础选项</h3>
+        <p className="text-sm text-muted-foreground">route options</p>
+      </div>
+      {errors.length > 0 ? (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {errors.map((error) => (
+            <div key={error}>{error}</div>
+          ))}
+        </div>
+      ) : null}
+      <SchemaFieldsEditor
+        schemaRoot={schema}
+        value={options}
+        fields={fields}
+        onChange={(next) =>
+          update(
+            (draft) =>
+              void (draft.options = sanitizeFields(next, fields, schema)),
+          )
+        }
+      />
+    </div>
+  );
+}
+
+function RouteRuleSetEditor({
+  schemaRoot,
+  ruleSet,
+  scopeKey,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot: ComposerSchema;
+  ruleSet: JsonObject;
+  scopeKey: string;
+  onChange: (ruleSet: JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const schema = getRouteRuleSetSchema(schemaRoot, ruleSet.type);
+  const errors = validateRouteRuleSet(schemaRoot, ruleSet);
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <DetailHeader
+        title={summarizeRouteRuleSet(ruleSet, 0)}
+        subtitle={String(ruleSet.type ?? "inline")}
+        mode={mode}
+        setMode={setMode}
+        embedded
+        actions={
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        }
+      />
+      {mode === "form" ? (
+        schema ? (
+          <RouteRuleSetTypedSchemaEditor
+            schemaRoot={schemaRoot}
+            value={ruleSet}
+            schema={schema}
+            errors={errors}
+            onTypeChange={(type) =>
+              onChange(changeRouteRuleSetType(schemaRoot, ruleSet, type))
+            }
+            onChange={(next) =>
+              onChange(
+                sanitizeRouteRuleSet(schemaRoot, {
+                  type: schema.type,
+                  ...next,
+                }),
+              )
+            }
+          />
+        ) : (
+          <Panel>
+            <div className="grid gap-3">
+              <div className="text-sm text-destructive">
+                不支持的路由规则集类型：{String(ruleSet.type ?? "")}
+              </div>
+              <Field label="类型">
+                <Select
+                  value=""
+                  onChange={(event) =>
+                    onChange(
+                      changeRouteRuleSetType(
+                        schemaRoot,
+                        ruleSet,
+                        event.target.value,
+                      ),
+                    )
+                  }
+                >
+                  <option value="">选择支持的类型</option>
+                  {getRouteRuleSetTypeOptions(schemaRoot).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <ObjectFormEditor value={ruleSet} onChange={onChange} />
+            </div>
+          </Panel>
+        )
+      ) : (
+        <StructuredCodeEditor
+          language={mode}
+          scopeKey={`${scopeKey}-${mode}`}
+          value={ruleSet}
+          onApply={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function RouteRuleSetTypedSchemaEditor({
+  schemaRoot,
+  value,
+  schema,
+  errors,
+  onTypeChange,
+  onChange,
+}: {
+  schemaRoot: ComposerSchema;
+  value: JsonObject;
+  schema: { type: string; label: string; fields: SchemaField[] };
+  errors: string[];
+  onTypeChange: (type: string) => void;
+  onChange: (value: JsonObject) => void;
+}) {
+  return (
+    <Panel>
+      <div className="grid gap-4">
+        <div className={formGridClass}>
+          <Field label="类型">
+            <Select
+              value={schema.type}
+              onChange={(event) => onTypeChange(event.target.value)}
+            >
+              {getRouteRuleSetTypeOptions(schemaRoot).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="self-end rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            schema: sing-box route/rule-sets/{schema.type}
+          </div>
+        </div>
+        {errors.length > 0 ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errors.map((error) => (
+              <div key={error}>{error}</div>
+            ))}
+          </div>
+        ) : null}
+        <SchemaFieldsEditor
+          schemaRoot={schemaRoot}
+          value={value}
+          fields={schema.fields}
+          onChange={onChange}
+        />
+      </div>
+    </Panel>
+  );
+}
+
+function RouteRuleEditor({
+  schemaRoot,
+  rule,
+  scopeKey,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot: ComposerSchema;
+  rule: JsonObject;
+  scopeKey: string;
+  onChange: (rule: JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const schema = getRouteRuleSchema(schemaRoot, rule.type);
+  const errors = validateRouteRule(schemaRoot, rule);
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <DetailHeader
+        title={summarizeRouteRule(rule, 0)}
+        subtitle={String(rule.type ?? "default")}
+        mode={mode}
+        setMode={setMode}
+        embedded
+        actions={
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        }
+      />
+      {mode === "form" ? (
+        schema ? (
+          <RouteTypedSchemaEditor
+            schemaRoot={schemaRoot}
+            value={rule}
+            schema={schema}
+            errors={errors}
+            onTypeChange={(type) =>
+              onChange(changeRouteRuleType(schemaRoot, rule, type))
+            }
+            onChange={(next) =>
+              onChange(
+                sanitizeRouteRule(schemaRoot, { type: schema.type, ...next }),
+              )
+            }
+          />
+        ) : (
+          <Panel>
+            <div className="grid gap-3">
+              <div className="text-sm text-destructive">
+                不支持的路由规则类型：{String(rule.type ?? "")}
+              </div>
+              <Field label="类型">
+                <Select
+                  value=""
+                  onChange={(event) =>
+                    onChange(
+                      changeRouteRuleType(
+                        schemaRoot,
+                        rule,
+                        event.target.value,
+                      ),
+                    )
+                  }
+                >
+                  <option value="">选择支持的类型</option>
+                  {getRouteRuleTypeOptions(schemaRoot).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <ObjectFormEditor value={rule} onChange={onChange} />
+            </div>
+          </Panel>
+        )
+      ) : (
+        <StructuredCodeEditor
+          language={mode}
+          scopeKey={`${scopeKey}-${mode}`}
+          value={rule}
+          onApply={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function RouteTypedSchemaEditor({
+  schemaRoot,
+  value,
+  schema,
+  errors,
+  onTypeChange,
+  onChange,
+}: {
+  schemaRoot: ComposerSchema;
+  value: JsonObject;
+  schema: { type: string; label: string; fields: SchemaField[] };
+  errors: string[];
+  onTypeChange: (type: string) => void;
+  onChange: (value: JsonObject) => void;
+}) {
+  return (
+    <Panel>
+      <div className="grid gap-4">
+        <div className={formGridClass}>
+          <Field label="类型">
+            <Select
+              value={schema.type}
+              onChange={(event) => onTypeChange(event.target.value)}
+            >
+              {getRouteRuleTypeOptions(schemaRoot).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="self-end rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            schema: sing-box route/rules/{schema.type}
+          </div>
+        </div>
+        {errors.length > 0 ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errors.map((error) => (
+              <div key={error}>{error}</div>
+            ))}
+          </div>
+        ) : null}
+        <SchemaFieldsEditor
+          schemaRoot={schemaRoot}
+          value={value}
+          fields={schema.fields}
+          onChange={onChange}
+        />
+      </div>
+    </Panel>
+  );
+}
+
+function HttpClientsPage({
+  schema,
+  state,
+  selectedIndex,
+  setSelectedIndex,
+  updateState,
+}: {
+  schema: ComposerSchema;
+  state: ComposerState;
+  selectedIndex: number;
+  setSelectedIndex: (index: number) => void;
+  updateState: (recipe: (draft: ComposerState) => void) => void;
+}) {
+  const clients = state.http_clients;
+  const safeIndex = Math.min(selectedIndex, Math.max(0, clients.length - 1));
+  const selected = clients[safeIndex] ?? null;
+
+  const addClient = () => {
+    const client = newHttpClient(state);
+    updateState((draft) => {
+      draft.http_clients.push(client);
+    });
+    setSelectedIndex(clients.length);
+  };
+
+  return (
+    <Panel>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">HTTP 客户端</h2>
+          <p className="text-sm text-muted-foreground">
+            {clients.length} clients
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={addClient}
+          disabled={(schema.http_client?.fields ?? []).length === 0}
+        >
+          <Plus size={16} />
+          New
+        </Button>
+      </div>
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">客户端列表</h3>
+            <Badge>{clients.length}</Badge>
+          </div>
+          <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+            {clients.map((client, index) => {
+              const tag =
+                typeof client.tag === "string" ? client.tag : `http-${index + 1}`;
+              const active = index === safeIndex;
+              return (
+                <button
+                  key={`${tag}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedIndex(index)}
+                  className={
+                    active
+                      ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                      : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                  }
+                >
+                  <span className="block truncate">{tag}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    HTTP/{String(client.version ?? "2")}
+                  </span>
+                </button>
+              );
+            })}
+            {clients.length === 0 ? (
+              <EmptyState label="No HTTP clients" />
+            ) : null}
+          </div>
+        </aside>
+        <div className="min-w-0">
+          {selected ? (
+            <HttpClientEditor
+              schemaRoot={schema}
+              client={selected}
+              scopeKey={`http-client-${safeIndex}`}
+              onChange={(next) =>
+                updateState(
+                  (draft) => void (draft.http_clients[safeIndex] = next),
+                )
+              }
+              onDelete={() => {
+                updateState((draft) => {
+                  draft.http_clients.splice(safeIndex, 1);
+                });
+                setSelectedIndex(Math.max(0, safeIndex - 1));
+              }}
+            />
+          ) : (
+            <EmptyState label="Select or add an HTTP client" />
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function HttpClientEditor({
+  schemaRoot,
+  client,
+  scopeKey,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot: ComposerSchema;
+  client: JsonObject;
+  scopeKey: string;
+  onChange: (client: JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const fields = schemaRoot.http_client?.fields ?? [];
+  const errors = validateFields(client, fields, schemaRoot);
+  const title = typeof client.tag === "string" ? client.tag : "http-client";
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <DetailHeader
+        title={title}
+        subtitle="http_client"
+        mode={mode}
+        setMode={setMode}
+        embedded
+        actions={
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        }
+      />
+      {mode === "form" ? (
+        <Panel>
+          <div className="grid gap-4">
+            {errors.length > 0 ? (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {errors.map((error) => (
+                  <div key={error}>{error}</div>
+                ))}
+              </div>
+            ) : null}
+            <SchemaFieldsEditor
+              schemaRoot={schemaRoot}
+              value={client}
+              fields={fields}
+              onChange={(next) =>
+                onChange(sanitizeFields(next, fields, schemaRoot))
+              }
+            />
+          </div>
+        </Panel>
+      ) : (
+        <StructuredCodeEditor
+          language={mode}
+          scopeKey={`${scopeKey}-${mode}`}
+          value={client}
+          onApply={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function CertificatesPage({
+  schema,
+  state,
+  selectedIndex,
+  setSelectedIndex,
+  updateState,
+}: {
+  schema: ComposerSchema;
+  state: ComposerState;
+  selectedIndex: number;
+  setSelectedIndex: (index: number) => void;
+  updateState: (recipe: (draft: ComposerState) => void) => void;
+}) {
+  const providers = state.certificate_providers;
+  const safeIndex = Math.min(selectedIndex, Math.max(0, providers.length - 1));
+  const selected = providers[safeIndex] ?? null;
+
+  const addProvider = () => {
+    const provider = newCertificateProvider(schema, state);
+    updateState((draft) => {
+      draft.certificate_providers.push(provider);
+    });
+    setSelectedIndex(providers.length);
+  };
+
+  return (
+    <section className="grid gap-4">
+      <GlobalSectionEditor
+        schemaRoot={schema}
+        title="证书基础选项"
+        subtitle="certificate"
+        value={state.certificate}
+        fields={schema.certificate?.fields ?? []}
+        scopeKey="certificate"
+        onChange={(next) =>
+          updateState((draft) => void (draft.certificate = next))
+        }
+      />
+
+      <Panel>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">证书提供者</h2>
+            <p className="text-sm text-muted-foreground">
+              {providers.length} providers
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={addProvider}
+            disabled={getCertificateProviderTypeOptions(schema).length === 0}
+          >
+            <Plus size={16} />
+            New
+          </Button>
+        </div>
+        <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+            <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">提供者列表</h3>
+              <Badge>{providers.length}</Badge>
+            </div>
+            <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+              {providers.map((provider, index) => {
+                const active = index === safeIndex;
+                return (
+                  <button
+                    key={`${String(provider.tag ?? "certificate-provider")}-${index}`}
+                    type="button"
+                    onClick={() => setSelectedIndex(index)}
+                    className={
+                      active
+                        ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                        : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                    }
+                  >
+                    <span className="block truncate">
+                      {summarizeCertificateProvider(provider, index)}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {String(provider.type ?? "unknown")}
+                    </span>
+                  </button>
+                );
+              })}
+              {providers.length === 0 ? (
+                <EmptyState label="No certificate providers" />
+              ) : null}
+            </div>
+          </aside>
+          <div className="min-w-0">
+            {selected ? (
+              <CertificateProviderEditor
+                schemaRoot={schema}
+                provider={selected}
+                scopeKey={`certificate-provider-${safeIndex}`}
+                onChange={(next) =>
+                  updateState(
+                    (draft) =>
+                      void (draft.certificate_providers[safeIndex] = next),
+                  )
+                }
+                onDelete={() => {
+                  updateState((draft) => {
+                    draft.certificate_providers.splice(safeIndex, 1);
+                  });
+                  setSelectedIndex(Math.max(0, safeIndex - 1));
+                }}
+              />
+            ) : (
+              <EmptyState label="Select or add a certificate provider" />
+            )}
+          </div>
+        </div>
+      </Panel>
+    </section>
+  );
+}
+
+function CertificateProviderEditor({
+  schemaRoot,
+  provider,
+  scopeKey,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot: ComposerSchema;
+  provider: JsonObject;
+  scopeKey: string;
+  onChange: (provider: JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const schema = getCertificateProviderSchema(schemaRoot, provider.type);
+  const errors = validateCertificateProvider(schemaRoot, provider);
+  const title = summarizeCertificateProvider(provider, 0);
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <DetailHeader
+        title={title}
+        subtitle={String(provider.type ?? "unknown")}
+        mode={mode}
+        setMode={setMode}
+        embedded
+        actions={
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        }
+      />
+      {mode === "form" ? (
+        schema ? (
+          <CertificateProviderTypedSchemaEditor
+            schemaRoot={schemaRoot}
+            value={provider}
+            schema={schema}
+            errors={errors}
+            onTypeChange={(type) =>
+              onChange(changeCertificateProviderType(schemaRoot, provider, type))
+            }
+            onChange={(next) =>
+              onChange(
+                sanitizeCertificateProvider(schemaRoot, {
+                  type: schema.type,
+                  ...next,
+                }),
+              )
+            }
+          />
+        ) : (
+          <Panel>
+            <div className="grid gap-3">
+              <div className="text-sm text-destructive">
+                不支持的证书提供者类型：{String(provider.type ?? "")}
+              </div>
+              <Field label="类型">
+                <Select
+                  value=""
+                  onChange={(event) =>
+                    onChange(
+                      changeCertificateProviderType(
+                        schemaRoot,
+                        provider,
+                        event.target.value,
+                      ),
+                    )
+                  }
+                >
+                  <option value="">选择支持的类型</option>
+                  {getCertificateProviderTypeOptions(schemaRoot).map(
+                    (option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ),
+                  )}
+                </Select>
+              </Field>
+              <ObjectFormEditor value={provider} onChange={onChange} />
+            </div>
+          </Panel>
+        )
+      ) : (
+        <StructuredCodeEditor
+          language={mode}
+          scopeKey={`${scopeKey}-${mode}`}
+          value={provider}
+          onApply={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function CertificateProviderTypedSchemaEditor({
+  schemaRoot,
+  value,
+  schema,
+  errors,
+  onTypeChange,
+  onChange,
+}: {
+  schemaRoot: ComposerSchema;
+  value: JsonObject;
+  schema: { type: string; label: string; fields: SchemaField[] };
+  errors: string[];
+  onTypeChange: (type: string) => void;
+  onChange: (value: JsonObject) => void;
+}) {
+  return (
+    <Panel>
+      <div className="grid gap-4">
+        <div className={formGridClass}>
+          <Field label="类型">
+            <Select
+              value={schema.type}
+              onChange={(event) => onTypeChange(event.target.value)}
+            >
+              {getCertificateProviderTypeOptions(schemaRoot).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="self-end rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            schema: sing-box certificate/provider/{schema.type}
+          </div>
+        </div>
+        {errors.length > 0 ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errors.map((error) => (
+              <div key={error}>{error}</div>
+            ))}
+          </div>
+        ) : null}
+        <SchemaFieldsEditor
+          schemaRoot={schemaRoot}
+          value={value}
+          fields={schema.fields}
+          onChange={onChange}
+        />
+      </div>
+    </Panel>
+  );
+}
+
+function ServicesPage({
+  schema,
+  state,
+  selectedIndex,
+  setSelectedIndex,
+  updateState,
+}: {
+  schema: ComposerSchema;
+  state: ComposerState;
+  selectedIndex: number;
+  setSelectedIndex: (index: number) => void;
+  updateState: (recipe: (draft: ComposerState) => void) => void;
+}) {
+  const services = state.services;
+  const safeIndex = Math.min(selectedIndex, Math.max(0, services.length - 1));
+  const selected = services[safeIndex] ?? null;
+
+  const addService = () => {
+    const service = newService(schema, state);
+    updateState((draft) => {
+      draft.services.push(service);
+    });
+    setSelectedIndex(services.length);
+  };
+
+  return (
+    <Panel>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">服务配置</h2>
+          <p className="text-sm text-muted-foreground">
+            {services.length} services
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={addService}
+          disabled={getServiceTypeOptions(schema).length === 0}
+        >
+          <Plus size={16} />
+          New
+        </Button>
+      </div>
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">服务列表</h3>
+            <Badge>{services.length}</Badge>
+          </div>
+          <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+            {services.map((service, index) => {
+              const active = index === safeIndex;
+              return (
+                <button
+                  key={`${String(service.tag ?? "service")}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedIndex(index)}
+                  className={
+                    active
+                      ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                      : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                  }
+                >
+                  <span className="block truncate">
+                    {summarizeService(service, index)}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {String(service.type ?? "unknown")}
+                  </span>
+                </button>
+              );
+            })}
+            {services.length === 0 ? <EmptyState label="No services" /> : null}
+          </div>
+        </aside>
+        <div className="min-w-0">
+          {selected ? (
+            <ServiceEditor
+              schemaRoot={schema}
+              service={selected}
+              scopeKey={`service-${safeIndex}`}
+              onChange={(next) =>
+                updateState((draft) => void (draft.services[safeIndex] = next))
+              }
+              onDelete={() => {
+                updateState((draft) => {
+                  draft.services.splice(safeIndex, 1);
+                });
+                setSelectedIndex(Math.max(0, safeIndex - 1));
+              }}
+            />
+          ) : (
+            <EmptyState label="Select or add a service" />
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function ServiceEditor({
+  schemaRoot,
+  service,
+  scopeKey,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot: ComposerSchema;
+  service: JsonObject;
+  scopeKey: string;
+  onChange: (service: JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const schema = getServiceSchema(schemaRoot, service.type);
+  const errors = validateService(schemaRoot, service);
+  const title = summarizeService(service, 0);
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <DetailHeader
+        title={title}
+        subtitle={String(service.type ?? "unknown")}
+        mode={mode}
+        setMode={setMode}
+        embedded
+        actions={
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        }
+      />
+      {mode === "form" ? (
+        schema ? (
+          <ServiceTypedSchemaEditor
+            schemaRoot={schemaRoot}
+            value={service}
+            schema={schema}
+            errors={errors}
+            onTypeChange={(type) =>
+              onChange(changeServiceType(schemaRoot, service, type))
+            }
+            onChange={(next) =>
+              onChange(sanitizeService(schemaRoot, { type: schema.type, ...next }))
+            }
+          />
+        ) : (
+          <Panel>
+            <div className="grid gap-3">
+              <div className="text-sm text-destructive">
+                不支持的服务类型：{String(service.type ?? "")}
+              </div>
+              <Field label="类型">
+                <Select
+                  value=""
+                  onChange={(event) =>
+                    onChange(
+                      changeServiceType(schemaRoot, service, event.target.value),
+                    )
+                  }
+                >
+                  <option value="">选择支持的类型</option>
+                  {getServiceTypeOptions(schemaRoot).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <ObjectFormEditor value={service} onChange={onChange} />
+            </div>
+          </Panel>
+        )
+      ) : (
+        <StructuredCodeEditor
+          language={mode}
+          scopeKey={`${scopeKey}-${mode}`}
+          value={service}
+          onApply={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function ServiceTypedSchemaEditor({
+  schemaRoot,
+  value,
+  schema,
+  errors,
+  onTypeChange,
+  onChange,
+}: {
+  schemaRoot: ComposerSchema;
+  value: JsonObject;
+  schema: { type: string; label: string; fields: SchemaField[] };
+  errors: string[];
+  onTypeChange: (type: string) => void;
+  onChange: (value: JsonObject) => void;
+}) {
+  return (
+    <Panel>
+      <div className="grid gap-4">
+        <div className={formGridClass}>
+          <Field label="类型">
+            <Select
+              value={schema.type}
+              onChange={(event) => onTypeChange(event.target.value)}
+            >
+              {getServiceTypeOptions(schemaRoot).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="self-end rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            schema: sing-box service/{schema.type}
+          </div>
+        </div>
+        {errors.length > 0 ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errors.map((error) => (
+              <div key={error}>{error}</div>
+            ))}
+          </div>
+        ) : null}
+        <SchemaFieldsEditor
+          schemaRoot={schemaRoot}
+          value={value}
+          fields={schema.fields}
+          onChange={onChange}
+        />
+      </div>
+    </Panel>
+  );
+}
+
+function EndpointsPage({
+  schema,
+  state,
+  selectedIndex,
+  setSelectedIndex,
+  updateState,
+}: {
+  schema: ComposerSchema;
+  state: ComposerState;
+  selectedIndex: number;
+  setSelectedIndex: (index: number) => void;
+  updateState: (recipe: (draft: ComposerState) => void) => void;
+}) {
+  const safeIndex = Math.min(
+    selectedIndex,
+    Math.max(0, state.endpoints.length - 1),
+  );
+  const selected = state.endpoints[safeIndex] ?? null;
+
+  const addEndpoint = () => {
+    const endpoint = newEndpoint(schema, state);
+    updateState((draft) => {
+      draft.endpoints.push(endpoint);
+    });
+    setSelectedIndex(state.endpoints.length);
+  };
+
+  return (
+    <Panel>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">端点配置</h2>
+          <p className="text-sm text-muted-foreground">
+            {state.endpoints.length} endpoints
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={addEndpoint}
+          disabled={getEndpointTypeOptions(schema).length === 0}
+        >
+          <Plus size={16} />
+          New
+        </Button>
+      </div>
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="sticky top-[calc(var(--composer-sticky-top)+1rem)] z-10 min-w-0 rounded-md border border-border bg-muted/20 p-3 max-h-[calc(100vh-var(--composer-sticky-top)-2rem)] overflow-hidden">
+          <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">端点列表</h3>
+            <Badge>{state.endpoints.length}</Badge>
+          </div>
+          <div className="grid max-h-[calc(100vh-var(--composer-sticky-top)-7rem)] min-w-0 content-start gap-2 overflow-y-auto pr-1">
+            {state.endpoints.map((endpoint, index) => {
+              const tag =
+                typeof endpoint.tag === "string"
+                  ? endpoint.tag
+                  : `endpoint-${index + 1}`;
+              const active = index === safeIndex;
+              return (
+                <button
+                  key={`${tag}-${index}`}
+                  type="button"
+                  onClick={() => setSelectedIndex(index)}
+                  className={
+                    active
+                      ? "rounded-md border border-primary bg-primary/10 px-3 py-2 text-left text-sm font-medium"
+                      : "rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:border-primary/50"
+                  }
+                >
+                  <span className="block truncate">{tag}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {String(endpoint.type ?? "unknown")}
+                  </span>
+                </button>
+              );
+            })}
+            {state.endpoints.length === 0 ? (
+              <EmptyState label="No endpoints" />
+            ) : null}
+          </div>
+        </aside>
+        <div className="min-w-0">
+          {selected ? (
+            <EndpointEditor
+              schemaRoot={schema}
+              endpoint={selected}
+              scopeKey={`endpoint-${safeIndex}`}
+              onChange={(next) =>
+                updateState(
+                  (draft) => void (draft.endpoints[safeIndex] = next),
+                )
+              }
+              onDelete={() => {
+                updateState((draft) => {
+                  draft.endpoints.splice(safeIndex, 1);
+                });
+                setSelectedIndex(Math.max(0, safeIndex - 1));
+              }}
+            />
+          ) : (
+            <EmptyState label="Select or add an endpoint" />
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function EndpointEditor({
+  schemaRoot,
+  endpoint,
+  scopeKey,
+  onChange,
+  onDelete,
+}: {
+  schemaRoot: ComposerSchema;
+  endpoint: JsonObject;
+  scopeKey: string;
+  onChange: (endpoint: JsonObject) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<LocalMode>("form");
+  const schema = getEndpointSchema(schemaRoot, endpoint.type);
+  const errors = validateEndpoint(schemaRoot, endpoint);
+  const title = typeof endpoint.tag === "string" ? endpoint.tag : "endpoint";
+
+  return (
+    <div className="grid min-w-0 gap-3">
+      <DetailHeader
+        title={title}
+        subtitle={String(endpoint.type ?? "unknown")}
+        mode={mode}
+        setMode={setMode}
+        embedded
+        actions={
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        }
+      />
+      {mode === "form" ? (
+        schema ? (
+          <EndpointTypedSchemaEditor
+            schemaRoot={schemaRoot}
+            value={endpoint}
+            schema={schema}
+            errors={errors}
+            onTypeChange={(type) =>
+              onChange(changeEndpointType(schemaRoot, endpoint, type))
+            }
+            onChange={(next) =>
+              onChange(
+                sanitizeEndpoint(schemaRoot, { type: schema.type, ...next }),
+              )
+            }
+          />
+        ) : (
+          <Panel>
+            <div className="grid gap-3">
+              <div className="text-sm text-destructive">
+                不支持的端点类型：{String(endpoint.type ?? "")}
+              </div>
+              <Field label="类型">
+                <Select
+                  value=""
+                  onChange={(event) =>
+                    onChange(
+                      changeEndpointType(
+                        schemaRoot,
+                        endpoint,
+                        event.target.value,
+                      ),
+                    )
+                  }
+                >
+                  <option value="">选择支持的类型</option>
+                  {getEndpointTypeOptions(schemaRoot).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <ObjectFormEditor value={endpoint} onChange={onChange} />
+            </div>
+          </Panel>
+        )
+      ) : (
+        <StructuredCodeEditor
+          language={mode}
+          scopeKey={`${scopeKey}-${mode}`}
+          value={endpoint}
+          onApply={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function EndpointTypedSchemaEditor({
+  schemaRoot,
+  value,
+  schema,
+  errors,
+  onTypeChange,
+  onChange,
+}: {
+  schemaRoot: ComposerSchema;
+  value: JsonObject;
+  schema: { type: string; label: string; fields: SchemaField[] };
+  errors: string[];
+  onTypeChange: (type: string) => void;
+  onChange: (value: JsonObject) => void;
+}) {
+  return (
+    <Panel>
+      <div className="grid gap-4">
+        <div className={formGridClass}>
+          <Field label="类型">
+            <Select
+              value={schema.type}
+              onChange={(event) => onTypeChange(event.target.value)}
+            >
+              {getEndpointTypeOptions(schemaRoot).map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <div className="self-end rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            schema: sing-box endpoint/{schema.type}
+          </div>
+        </div>
+        {errors.length > 0 ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errors.map((error) => (
+              <div key={error}>{error}</div>
+            ))}
+          </div>
+        ) : null}
+        <SchemaFieldsEditor
+          schemaRoot={schemaRoot}
+          value={value}
+          fields={schema.fields}
+          onChange={onChange}
+        />
+      </div>
+    </Panel>
   );
 }
 
@@ -4527,12 +7267,14 @@ function ObjectFormEditor({
 function StructuredCodeEditor({
   language,
   scopeKey,
+  readOnly = false,
   textareaExpandable = false,
   value,
   onApply,
 }: {
   language: "json" | "yaml";
   scopeKey: string;
+  readOnly?: boolean;
   textareaExpandable?: boolean;
   value: JsonObject;
   onApply: (value: JsonObject) => void;
@@ -4546,6 +7288,9 @@ function StructuredCodeEditor({
   }, [scopeKey, language]);
 
   const apply = () => {
+    if (readOnly) {
+      return;
+    }
     try {
       const parsed =
         language === "json" ? JSON.parse(draft) : YAML.parse(draft);
@@ -4565,6 +7310,7 @@ function StructuredCodeEditor({
       <Textarea
         expandedClassName="min-h-80"
         expandable={textareaExpandable}
+        readOnly={readOnly}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
       />
@@ -4574,9 +7320,9 @@ function StructuredCodeEditor({
         ) : (
           <div />
         )}
-        <Button onClick={apply}>
+        <Button onClick={apply} disabled={readOnly}>
           <Save size={16} />
-          Apply
+          {readOnly ? "只读" : "Apply"}
         </Button>
       </div>
     </div>
@@ -4755,16 +7501,48 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function StatusBadge({ status }: { status: Exclude<Status, null> }) {
+function StatusBadge({
+  status,
+  onClose,
+}: {
+  status: Exclude<Status, null>;
+  onClose: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const className =
+    status.kind === "error"
+      ? "border-destructive/30 bg-destructive text-destructive-foreground"
+      : "border-border bg-secondary text-secondary-foreground";
+
+  useEffect(() => {
+    if (hovered) {
+      return;
+    }
+    const timeout = window.setTimeout(onClose, 3000);
+    return () => window.clearTimeout(timeout);
+  }, [hovered, onClose, status]);
+
   return (
-    <div
-      className={
-        status.kind === "error"
-          ? "inline-flex min-h-9 max-w-full items-center rounded-md bg-destructive px-3 py-1.5 text-sm text-destructive-foreground"
-          : "inline-flex min-h-9 max-w-full items-center rounded-md bg-secondary px-3 py-1.5 text-sm text-secondary-foreground"
-      }
-    >
-      {status.message}
+    <div className="pointer-events-none fixed left-3 right-3 top-[calc(var(--composer-sticky-top)+0.75rem)] z-50 flex justify-center">
+      <div
+        className={`pointer-events-auto flex max-w-[min(920px,calc(100vw-1.5rem))] min-w-0 items-start gap-3 rounded-md border px-3 py-2 text-sm shadow-lg ${className}`}
+        role={status.kind === "error" ? "alert" : "status"}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <div className="min-w-0 flex-1 whitespace-pre-wrap break-words">
+          {status.message}
+        </div>
+        <button
+          type="button"
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm transition hover:bg-black/10"
+          aria-label="关闭"
+          title="关闭"
+          onClick={onClose}
+        >
+          <X size={14} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -4969,6 +7747,56 @@ function newInbound(schema: ComposerSchema, state: ComposerState): JsonObject {
   );
 }
 
+function newEndpoint(schema: ComposerSchema, state: ComposerState): JsonObject {
+  const tag = uniqueEndpointTag(state, "endpoint");
+  return createTypedEndpoint(
+    schema,
+    schema.default_endpoint_type ?? "wireguard",
+    {
+      tag,
+      name: tag,
+      address: ["10.0.0.1/32"],
+      private_key: "",
+      peers: [],
+    },
+  );
+}
+
+function newHttpClient(state: ComposerState): JsonObject {
+  return {
+    tag: uniqueHttpClientTag(state, "http"),
+    version: 2,
+  };
+}
+
+function newCertificateProvider(
+  schema: ComposerSchema,
+  state: ComposerState,
+): JsonObject {
+  const tag = uniqueCertificateProviderTag(state, "certificate-provider");
+  return createTypedCertificateProvider(
+    schema,
+    schema.default_certificate_provider_type ?? "acme",
+    {
+      tag,
+      domain: ["example.com"],
+      endpoint: firstEndpointTag(state),
+    },
+  );
+}
+
+function newService(schema: ComposerSchema, state: ComposerState): JsonObject {
+  const tag = uniqueServiceTag(state, "service");
+  return createTypedService(schema, schema.default_service_type || "resolved", {
+    tag,
+    listen: "127.0.0.1",
+    listen_port: 8080,
+    servers: { "/": "" },
+    users: [],
+    config_path: "",
+  });
+}
+
 function newDnsServer(schema: ComposerSchema, dns: DnsConfig): JsonObject {
   const tag = uniqueDnsTag(dns, "dns");
   return createDnsServer(schema, schema.dns?.default_server_type ?? "udp", {
@@ -4986,6 +7814,32 @@ function newDnsRule(schema: ComposerSchema, dns: DnsConfig): JsonObject {
   });
 }
 
+function newRouteRule(schema: ComposerSchema, state: ComposerState): JsonObject {
+  return createRouteRule(schema, schema.route?.default_rule_type ?? "default", {
+    action: "route",
+    outbound: defaultRouteOutbound(state),
+    domain_suffix: ["example.com"],
+  });
+}
+
+function newRouteRuleSet(schema: ComposerSchema, route: RouteConfig): JsonObject {
+  return createRouteRuleSet(
+    schema,
+    schema.route?.default_rule_set_type ?? "inline",
+    {
+      tag: uniqueRouteRuleSetTag(route, "rule-set"),
+      rules: [],
+    },
+  );
+}
+
+function defaultRouteOutbound(state: ComposerState): string {
+  return (
+    state.proxy_groups.find((group) => group.enabled && group.tag.trim() !== "")
+      ?.tag ?? "DIRECT"
+  );
+}
+
 function uniqueInboundTag(state: ComposerState, base: string): string {
   const tags = new Set(
     state.inbounds
@@ -4993,6 +7847,69 @@ function uniqueInboundTag(state: ComposerState, base: string): string {
       .filter((tag): tag is string => typeof tag === "string"),
   );
   let index = state.inbounds.length + 1;
+  let tag = `${base}-${index}`;
+  while (tags.has(tag)) {
+    index += 1;
+    tag = `${base}-${index}`;
+  }
+  return tag;
+}
+
+function uniqueEndpointTag(state: ComposerState, base: string): string {
+  const tags = new Set(
+    state.endpoints
+      .map((endpoint) => endpoint.tag)
+      .filter((tag): tag is string => typeof tag === "string"),
+  );
+  let index = state.endpoints.length + 1;
+  let tag = `${base}-${index}`;
+  while (tags.has(tag)) {
+    index += 1;
+    tag = `${base}-${index}`;
+  }
+  return tag;
+}
+
+function uniqueHttpClientTag(state: ComposerState, base: string): string {
+  const tags = new Set(
+    state.http_clients
+      .map((client) => client.tag)
+      .filter((tag): tag is string => typeof tag === "string"),
+  );
+  let index = state.http_clients.length + 1;
+  let tag = `${base}-${index}`;
+  while (tags.has(tag)) {
+    index += 1;
+    tag = `${base}-${index}`;
+  }
+  return tag;
+}
+
+function uniqueCertificateProviderTag(
+  state: ComposerState,
+  base: string,
+): string {
+  const tags = new Set(
+    state.certificate_providers
+      .map((provider) => provider.tag)
+      .filter((tag): tag is string => typeof tag === "string"),
+  );
+  let index = state.certificate_providers.length + 1;
+  let tag = `${base}-${index}`;
+  while (tags.has(tag)) {
+    index += 1;
+    tag = `${base}-${index}`;
+  }
+  return tag;
+}
+
+function uniqueServiceTag(state: ComposerState, base: string): string {
+  const tags = new Set(
+    state.services
+      .map((service) => service.tag)
+      .filter((tag): tag is string => typeof tag === "string"),
+  );
+  let index = state.services.length + 1;
   let tag = `${base}-${index}`;
   while (tags.has(tag)) {
     index += 1;
@@ -5016,6 +7933,26 @@ function uniqueDnsTag(dns: DnsConfig, base: string): string {
   return tag;
 }
 
+function uniqueRouteRuleSetTag(route: RouteConfig, base: string): string {
+  const tags = new Set(
+    route.rule_sets
+      .map((ruleSet) => ruleSet.tag)
+      .filter((tag): tag is string => typeof tag === "string"),
+  );
+  let index = route.rule_sets.length + 1;
+  let tag = `${base}-${index}`;
+  while (tags.has(tag)) {
+    index += 1;
+    tag = `${base}-${index}`;
+  }
+  return tag;
+}
+
+function firstEndpointTag(state: ComposerState): string | undefined {
+  return state.endpoints.find((endpoint) => typeof endpoint.tag === "string")
+    ?.tag as string | undefined;
+}
+
 function summarizeDnsRule(rule: JsonObject, index: number): string {
   if (rule.type === "logical") {
     return `logical ${String(rule.mode ?? "and")}`;
@@ -5032,6 +7969,82 @@ function summarizeDnsRule(rule: JsonObject, index: number): string {
   const server = typeof rule.server === "string" ? rule.server : "";
   const action = typeof rule.action === "string" ? rule.action : "route";
   return server ? `${action} -> ${server}` : `DNS rule ${index + 1}`;
+}
+
+function summarizeCertificateProvider(provider: JsonObject, index: number): string {
+  const tag = typeof provider.tag === "string" ? provider.tag.trim() : "";
+  if (tag) {
+    return tag;
+  }
+  const domain = provider.domain;
+  if (Array.isArray(domain) && domain.length > 0) {
+    return domain.slice(0, 2).join(", ");
+  }
+  if (typeof provider.endpoint === "string" && provider.endpoint.trim() !== "") {
+    return provider.endpoint;
+  }
+  return `Certificate provider ${index + 1}`;
+}
+
+function summarizeService(service: JsonObject, index: number): string {
+  const tag = typeof service.tag === "string" ? service.tag.trim() : "";
+  if (tag) {
+    return tag;
+  }
+  if (typeof service.listen === "string" && service.listen.trim() !== "") {
+    return `${service.listen}:${String(service.listen_port ?? "")}`;
+  }
+  return `Service ${index + 1}`;
+}
+
+function summarizeRouteRule(rule: JsonObject, index: number): string {
+  if (rule.type === "logical") {
+    return `logical ${String(rule.mode ?? "and")}`;
+  }
+  for (const key of [
+    "domain",
+    "domain_suffix",
+    "domain_keyword",
+    "domain_regex",
+    "ip_cidr",
+    "geoip",
+    "rule_set",
+  ]) {
+    const value = rule[key];
+    if (Array.isArray(value) && value.length > 0) {
+      return `${key}: ${value.slice(0, 2).join(", ")}`;
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+      return `${key}: ${value}`;
+    }
+  }
+  const action = typeof rule.action === "string" ? rule.action : "route";
+  const outbound = typeof rule.outbound === "string" ? rule.outbound : "";
+  return outbound ? `${action} -> ${outbound}` : `Route rule ${index + 1}`;
+}
+
+function summarizeRouteRuleSet(ruleSet: JsonObject, index: number): string {
+  const tag = typeof ruleSet.tag === "string" ? ruleSet.tag.trim() : "";
+  if (tag) {
+    return tag;
+  }
+  if (typeof ruleSet.url === "string" && ruleSet.url.trim() !== "") {
+    return ruleSet.url;
+  }
+  if (typeof ruleSet.path === "string" && ruleSet.path.trim() !== "") {
+    return ruleSet.path;
+  }
+  return `Route rule set ${index + 1}`;
+}
+
+function summarizeTypedListItem(
+  field: SchemaField,
+  item: JsonObject,
+  index: number,
+): string {
+  return field.schemaNamespace?.startsWith("route.")
+    ? summarizeRouteRule(item, index)
+    : summarizeDnsRule(item, index);
 }
 
 function toggleSpecial(

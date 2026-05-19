@@ -1,0 +1,25 @@
+{
+  "fields": [
+    {
+      "key": "disabled",
+      "label": "禁用日志",
+      "kind": "boolean"
+    },
+    {
+      "key": "level",
+      "label": "日志等级",
+      "kind": "select",
+      "options": ["", "trace", "debug", "info", "warn", "warning", "error", "fatal", "panic"]
+    },
+    {
+      "key": "output",
+      "label": "输出路径",
+      "kind": "string"
+    },
+    {
+      "key": "timestamp",
+      "label": "时间戳",
+      "kind": "boolean"
+    }
+  ]
+}

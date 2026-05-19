@@ -1,0 +1,139 @@
+[
+  {
+    "key": "query_type",
+    "label": "查询类型",
+    "kind": "string-or-number-list",
+    "wide": true,
+    "placeholder": "[\"A\", \"AAAA\", 32768]"
+  },
+  {
+    "key": "network",
+    "label": "网络",
+    "kind": "string-list",
+    "allowedValues": ["tcp", "udp"]
+  },
+  {
+    "key": "domain",
+    "label": "完整域名",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain_suffix",
+    "label": "域名后缀",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain_keyword",
+    "label": "域名关键词",
+    "kind": "string-list"
+  },
+  {
+    "key": "domain_regex",
+    "label": "域名正则",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_ip_cidr",
+    "label": "来源 CIDR",
+    "kind": "string-list"
+  },
+  {
+    "key": "ip_cidr",
+    "label": "目标 CIDR",
+    "kind": "string-list"
+  },
+  {
+    "key": "source_port",
+    "label": "来源端口",
+    "kind": "number-list",
+    "integer": true,
+    "min": 0,
+    "max": 65535
+  },
+  {
+    "key": "source_port_range",
+    "label": "来源端口范围",
+    "kind": "string-list"
+  },
+  {
+    "key": "port",
+    "label": "目标端口",
+    "kind": "number-list",
+    "integer": true,
+    "min": 0,
+    "max": 65535
+  },
+  {
+    "key": "port_range",
+    "label": "目标端口范围",
+    "kind": "string-list"
+  },
+  {
+    "key": "process_name",
+    "label": "进程名",
+    "kind": "string-list"
+  },
+  {
+    "key": "process_path",
+    "label": "进程路径",
+    "kind": "string-list"
+  },
+  {
+    "key": "process_path_regex",
+    "label": "进程路径正则",
+    "kind": "string-list"
+  },
+  {
+    "key": "package_name",
+    "label": "包名",
+    "kind": "string-list"
+  },
+  {
+    "key": "package_name_regex",
+    "label": "包名正则",
+    "kind": "string-list"
+  },
+  {
+    "key": "network_type",
+    "label": "网络类型",
+    "kind": "string-list",
+    "allowedValues": ["wifi", "cellular", "ethernet", "other"]
+  },
+  {
+    "key": "network_is_expensive",
+    "label": "网络计费",
+    "kind": "boolean"
+  },
+  {
+    "key": "network_is_constrained",
+    "label": "低数据模式",
+    "kind": "boolean"
+  },
+  {
+    "key": "wifi_ssid",
+    "label": "WiFi SSID",
+    "kind": "string-list"
+  },
+  {
+    "key": "wifi_bssid",
+    "label": "WiFi BSSID",
+    "kind": "string-list"
+  },
+  {
+    "key": "network_interface_address",
+    "label": "网络接口地址",
+    "kind": "map",
+    "valueType": "string-list",
+    "wide": true
+  },
+  {
+    "key": "default_interface_address",
+    "label": "默认接口地址",
+    "kind": "string-list"
+  },
+  {
+    "key": "invert",
+    "label": "反选",
+    "kind": "boolean"
+  }
+]

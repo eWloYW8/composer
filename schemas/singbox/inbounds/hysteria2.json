@@ -19,12 +19,14 @@
       "key": "up_mbps",
       "label": "上行 Mbps",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
       "key": "down_mbps",
       "label": "下行 Mbps",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
@@ -79,6 +81,10 @@
       "label": "TLS",
       "kind": "object",
       "wide": true,
+      "required": true,
+      "defaultValue": {
+        "enabled": true
+      },
       "ref": "shared/tls-inbound.json"
     },
     {
@@ -144,6 +150,7 @@
           "key": "status_code",
           "label": "状态码",
           "kind": "number",
+          "integer": true,
           "min": 100,
           "max": 599,
           "visibleWhen": [
@@ -158,6 +165,7 @@
           "key": "headers",
           "label": "Headers",
           "kind": "map",
+          "valueType": "string-list",
           "wide": true,
           "visibleWhen": [
             {
@@ -215,7 +223,10 @@
           "key": "realm_id",
           "label": "Realm ID",
           "kind": "string",
-          "required": true
+          "required": true,
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
         },
         {
           "key": "stun_servers",

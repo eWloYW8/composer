@@ -14,7 +14,7 @@
     "key": "strategy",
     "label": "域名策略",
     "kind": "select",
-    "options": ["", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"]
+    "options": ["", "as_is", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"]
   },
   {
     "key": "disable_cache",
@@ -30,6 +30,7 @@
     "key": "rewrite_ttl",
     "label": "重写 TTL",
     "kind": "number",
+    "integer": true,
     "min": 0
   },
   {

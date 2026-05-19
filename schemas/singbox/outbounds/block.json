@@ -1,0 +1,12 @@
+{
+  "type": "block",
+  "label": "Block",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    }
+  ]
+}

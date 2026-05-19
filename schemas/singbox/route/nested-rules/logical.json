@@ -1,0 +1,29 @@
+{
+  "type": "logical",
+  "label": "Logical",
+  "fields": [
+    {
+      "key": "mode",
+      "label": "逻辑模式",
+      "kind": "select",
+      "required": true,
+      "defaultValue": "and",
+      "options": ["and", "or"]
+    },
+    {
+      "key": "rules",
+      "label": "子规则",
+      "kind": "typed-list",
+      "required": true,
+      "wide": true,
+      "schemaNamespace": "route.nested_rules",
+      "defaultType": "default",
+      "defaultValue": []
+    },
+    {
+      "key": "invert",
+      "label": "反选",
+      "kind": "boolean"
+    }
+  ]
+}

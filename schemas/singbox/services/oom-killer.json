@@ -1,0 +1,32 @@
+{
+  "type": "oom-killer",
+  "label": "OOM Killer",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Service tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "memory_limit",
+      "label": "Memory limit",
+      "kind": "string-or-number"
+    },
+    {
+      "key": "safety_margin",
+      "label": "Safety margin",
+      "kind": "string-or-number"
+    },
+    {
+      "key": "min_interval",
+      "label": "Min interval",
+      "kind": "string"
+    },
+    {
+      "key": "max_interval",
+      "label": "Max interval",
+      "kind": "string"
+    }
+  ]
+}

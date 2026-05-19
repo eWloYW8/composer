@@ -54,7 +54,13 @@
       "label": "按 ALPN 回落",
       "kind": "object-map",
       "wide": true,
-      "ref": "shared/server-options.json"
+      "ref": "shared/server-options.json",
+      "visibleWhen": [
+        {
+          "key": "tls",
+          "op": "present"
+        }
+      ]
     },
     {
       "key": "multiplex",

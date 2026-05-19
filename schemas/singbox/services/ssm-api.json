@@ -1,0 +1,39 @@
+{
+  "type": "ssm-api",
+  "label": "SSM API",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Service tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "_listen",
+      "label": "监听字段",
+      "kind": "object",
+      "flatten": true,
+      "ref": "shared/listen.json"
+    },
+    {
+      "key": "servers",
+      "label": "Shadowsocks servers",
+      "kind": "map",
+      "valueType": "string",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "cache_path",
+      "label": "缓存路径",
+      "kind": "string"
+    },
+    {
+      "key": "tls",
+      "label": "TLS",
+      "kind": "object",
+      "wide": true,
+      "ref": "shared/tls-inbound.json"
+    }
+  ]
+}

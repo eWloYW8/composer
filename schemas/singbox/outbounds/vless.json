@@ -18,6 +18,7 @@
       "key": "server_port",
       "label": "服务器端口",
       "kind": "number",
+      "integer": true,
       "required": true,
       "min": 1,
       "max": 65535,
@@ -27,7 +28,8 @@
       "key": "uuid",
       "label": "UUID",
       "kind": "string",
-      "required": true
+      "required": true,
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     {
       "key": "flow",
@@ -41,430 +43,18 @@
     {
       "key": "network",
       "label": "网络",
-      "kind": "select",
-      "options": [
-        "",
-        "tcp",
-        "udp"
-      ]
+      "kind": "string-list",
+      "allowedValues": ["tcp", "udp"]
     },
     {
       "key": "tls",
       "label": "TLS",
       "kind": "object",
       "wide": true,
-      "fields": [
-        {
-          "key": "enabled",
-          "label": "启用 TLS",
-          "kind": "boolean",
-          "defaultValue": true
-        },
-        {
-          "key": "engine",
-          "label": "TLS 引擎",
-          "kind": "select",
-          "options": [
-            "",
-            "go",
-            "apple",
-            "windows"
-          ]
-        },
-        {
-          "key": "disable_sni",
-          "label": "禁用 SNI",
-          "kind": "boolean",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "server_name",
-          "label": "Server Name",
-          "kind": "string"
-        },
-        {
-          "key": "insecure",
-          "label": "跳过证书验证",
-          "kind": "boolean"
-        },
-        {
-          "key": "alpn",
-          "label": "ALPN",
-          "kind": "string-list"
-        },
-        {
-          "key": "min_version",
-          "label": "最低 TLS 版本",
-          "kind": "select",
-          "options": [
-            "",
-            "1.0",
-            "1.1",
-            "1.2",
-            "1.3"
-          ]
-        },
-        {
-          "key": "max_version",
-          "label": "最高 TLS 版本",
-          "kind": "select",
-          "options": [
-            "",
-            "1.0",
-            "1.1",
-            "1.2",
-            "1.3"
-          ]
-        },
-        {
-          "key": "cipher_suites",
-          "label": "Cipher suites",
-          "kind": "string-list",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "curve_preferences",
-          "label": "Curve preferences",
-          "kind": "string-list",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "certificate",
-          "label": "证书",
-          "kind": "string-list",
-          "wide": true
-        },
-        {
-          "key": "certificate_path",
-          "label": "证书路径",
-          "kind": "string"
-        },
-        {
-          "key": "certificate_public_key_sha256",
-          "label": "证书公钥 SHA256",
-          "kind": "string-list"
-        },
-        {
-          "key": "client_certificate",
-          "label": "客户端证书",
-          "kind": "string-list",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "client_certificate_path",
-          "label": "客户端证书路径",
-          "kind": "string",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "client_key",
-          "label": "客户端密钥",
-          "kind": "string-list",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "client_key_path",
-          "label": "客户端密钥路径",
-          "kind": "string",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "fragment",
-          "label": "TLS fragment",
-          "kind": "boolean",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "fragment_fallback_delay",
-          "label": "fragment fallback delay",
-          "kind": "string",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            },
-            {
-              "key": "fragment",
-              "op": "present"
-            }
-          ]
-        },
-        {
-          "key": "record_fragment",
-          "label": "record_fragment",
-          "kind": "boolean",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "spoof",
-          "label": "spoof",
-          "kind": "string",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "spoof_method",
-          "label": "spoof_method",
-          "kind": "string",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            },
-            {
-              "key": "spoof",
-              "op": "present"
-            }
-          ]
-        },
-        {
-          "key": "kernel_tx",
-          "label": "kernel_tx",
-          "kind": "boolean",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "kernel_rx",
-          "label": "kernel_rx",
-          "kind": "boolean",
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "handshake_timeout",
-          "label": "握手超时",
-          "kind": "string"
-        },
-        {
-          "key": "ech",
-          "label": "ECH",
-          "kind": "object",
-          "wide": true,
-          "fields": [
-            {
-              "key": "enabled",
-              "label": "启用",
-              "kind": "boolean"
-            },
-            {
-              "key": "config",
-              "label": "config",
-              "kind": "string-list"
-            },
-            {
-              "key": "config_path",
-              "label": "config_path",
-              "kind": "string"
-            },
-            {
-              "key": "query_server_name",
-              "label": "query_server_name",
-              "kind": "string"
-            }
-          ],
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "utls",
-          "label": "uTLS",
-          "kind": "object",
-          "wide": true,
-          "fields": [
-            {
-              "key": "enabled",
-              "label": "启用",
-              "kind": "boolean"
-            },
-            {
-              "key": "fingerprint",
-              "label": "fingerprint",
-              "kind": "select",
-              "options": [
-                "",
-                "chrome",
-                "firefox",
-                "edge",
-                "safari",
-                "360",
-                "qq",
-                "ios",
-                "android",
-                "random",
-                "randomized"
-              ]
-            }
-          ],
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        },
-        {
-          "key": "reality",
-          "label": "Reality",
-          "kind": "object",
-          "wide": true,
-          "fields": [
-            {
-              "key": "enabled",
-              "label": "启用",
-              "kind": "boolean"
-            },
-            {
-              "key": "public_key",
-              "label": "public_key",
-              "kind": "string"
-            },
-            {
-              "key": "short_id",
-              "label": "short_id",
-              "kind": "string"
-            }
-          ],
-          "visibleWhen": [
-            {
-              "key": "engine",
-              "op": "not-one-of",
-              "values": [
-                "apple",
-                "windows"
-              ]
-            }
-          ]
-        }
-      ],
       "defaultValue": {
         "enabled": true
-      }
+      },
+      "ref": "shared/tls-outbound.json"
     },
     {
       "key": "multiplex",
@@ -493,6 +83,7 @@
           "key": "max_connections",
           "label": "最大连接数",
           "kind": "number",
+          "integer": true,
           "min": 0,
           "visibleWhen": [
             {
@@ -505,6 +96,7 @@
           "key": "min_streams",
           "label": "最小 streams",
           "kind": "number",
+          "integer": true,
           "min": 0,
           "visibleWhen": [
             {
@@ -517,6 +109,7 @@
           "key": "max_streams",
           "label": "最大 streams",
           "kind": "number",
+          "integer": true,
           "min": 0,
           "visibleWhen": [
             {
@@ -549,12 +142,14 @@
               "key": "up_mbps",
               "label": "上行 Mbps",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {
               "key": "down_mbps",
               "label": "下行 Mbps",
               "kind": "number",
+              "integer": true,
               "min": 0
             }
           ]
@@ -597,6 +192,7 @@
             "key": "headers",
             "label": "Headers",
             "kind": "map",
+            "valueType": "string-list",
             "wide": true
           },
           {
@@ -620,12 +216,14 @@
             "key": "headers",
             "label": "Headers",
             "kind": "map",
+            "valueType": "string-list",
             "wide": true
           },
           {
             "key": "max_early_data",
             "label": "max_early_data",
             "kind": "number",
+            "integer": true,
             "min": 0
           },
           {
@@ -672,6 +270,7 @@
             "key": "headers",
             "label": "Headers",
             "kind": "map",
+            "valueType": "string-list",
             "wide": true
           }
         ]
@@ -775,7 +374,7 @@
         {
           "key": "routing_mark",
           "label": "routing_mark",
-          "kind": "string",
+          "kind": "string-or-number",
           "visibleWhen": [
             {
               "key": "detour",
@@ -927,6 +526,7 @@
               "key": "rewrite_ttl",
               "label": "rewrite_ttl",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {

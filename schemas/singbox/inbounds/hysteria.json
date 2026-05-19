@@ -18,7 +18,8 @@
     {
       "key": "up",
       "label": "上行带宽",
-      "kind": "string",
+      "kind": "string-or-number",
+      "required": true,
       "visibleWhen": [
         {
           "key": "up_mbps",
@@ -30,7 +31,9 @@
       "key": "up_mbps",
       "label": "上行 Mbps",
       "kind": "number",
-      "min": 0,
+      "integer": true,
+      "required": true,
+      "min": 1,
       "visibleWhen": [
         {
           "key": "up",
@@ -41,7 +44,8 @@
     {
       "key": "down",
       "label": "下行带宽",
-      "kind": "string",
+      "kind": "string-or-number",
+      "required": true,
       "visibleWhen": [
         {
           "key": "down_mbps",
@@ -53,7 +57,9 @@
       "key": "down_mbps",
       "label": "下行 Mbps",
       "kind": "number",
-      "min": 0,
+      "integer": true,
+      "required": true,
+      "min": 1,
       "visibleWhen": [
         {
           "key": "down",
@@ -107,6 +113,10 @@
       "label": "TLS",
       "kind": "object",
       "wide": true,
+      "required": true,
+      "defaultValue": {
+        "enabled": true
+      },
       "ref": "shared/tls-inbound.json"
     },
     {
@@ -115,6 +125,32 @@
       "kind": "object",
       "flatten": true,
       "ref": "shared/quic.json"
+    },
+    {
+      "key": "recv_window_conn",
+      "label": "recv_window_conn",
+      "kind": "number",
+      "integer": true,
+      "min": 0
+    },
+    {
+      "key": "recv_window_client",
+      "label": "recv_window_client",
+      "kind": "number",
+      "integer": true,
+      "min": 0
+    },
+    {
+      "key": "max_conn_client",
+      "label": "max_conn_client",
+      "kind": "number",
+      "integer": true,
+      "min": 0
+    },
+    {
+      "key": "disable_mtu_discovery",
+      "label": "disable_mtu_discovery",
+      "kind": "boolean"
     }
   ]
 }

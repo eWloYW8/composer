@@ -10,7 +10,7 @@
         "key": "strategy",
         "label": "默认解析策略",
         "kind": "select",
-        "options": ["", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"]
+        "options": ["", "as_is", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"]
       },
       {
         "key": "disable_cache",
@@ -43,6 +43,7 @@
         "key": "cache_capacity",
         "label": "缓存容量",
         "kind": "number",
+        "integer": true,
         "min": 0
       },
       {

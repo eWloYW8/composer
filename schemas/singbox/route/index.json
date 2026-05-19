@@ -1,0 +1,184 @@
+{
+  "options": {
+    "fields": [
+      {
+        "key": "geoip",
+        "label": "GeoIP",
+        "kind": "object",
+        "wide": true,
+        "fields": [
+          {
+            "key": "path",
+            "label": "路径",
+            "kind": "string"
+          },
+          {
+            "key": "download_url",
+            "label": "下载 URL",
+            "kind": "string"
+          },
+          {
+            "key": "download_detour",
+            "label": "下载 detour",
+            "kind": "string"
+          }
+        ]
+      },
+      {
+        "key": "geosite",
+        "label": "Geosite",
+        "kind": "object",
+        "wide": true,
+        "fields": [
+          {
+            "key": "path",
+            "label": "路径",
+            "kind": "string"
+          },
+          {
+            "key": "download_url",
+            "label": "下载 URL",
+            "kind": "string"
+          },
+          {
+            "key": "download_detour",
+            "label": "下载 detour",
+            "kind": "string"
+          }
+        ]
+      },
+      {
+        "key": "final",
+        "label": "默认出站",
+        "kind": "string",
+        "placeholder": "DIRECT"
+      },
+      {
+        "key": "find_process",
+        "label": "查找进程",
+        "kind": "boolean"
+      },
+      {
+        "key": "find_neighbor",
+        "label": "查找邻居",
+        "kind": "boolean"
+      },
+      {
+        "key": "dhcp_lease_files",
+        "label": "DHCP lease 文件",
+        "kind": "string-list",
+        "wide": true
+      },
+      {
+        "key": "auto_detect_interface",
+        "label": "自动检测接口",
+        "kind": "boolean"
+      },
+      {
+        "key": "override_android_vpn",
+        "label": "覆盖 Android VPN",
+        "kind": "boolean"
+      },
+      {
+        "key": "default_interface",
+        "label": "默认接口",
+        "kind": "string"
+      },
+      {
+        "key": "default_mark",
+        "label": "默认 routing mark",
+        "kind": "string-or-number"
+      },
+      {
+        "key": "default_domain_resolver",
+        "label": "默认域名解析器",
+        "kind": "string-or-object",
+        "wide": true,
+        "ref": "shared/dns-route-options.json"
+      },
+      {
+        "key": "default_network_strategy",
+        "label": "默认网络策略",
+        "kind": "select",
+        "options": ["", "default", "fallback", "hybrid"]
+      },
+      {
+        "key": "default_network_type",
+        "label": "默认网络类型",
+        "kind": "string-list",
+        "allowedValues": ["wifi", "cellular", "ethernet", "other"]
+      },
+      {
+        "key": "default_fallback_network_type",
+        "label": "默认 fallback 网络类型",
+        "kind": "string-list",
+        "allowedValues": ["wifi", "cellular", "ethernet", "other"],
+        "visibleWhen": [
+          {
+            "key": "default_network_strategy",
+            "op": "equals",
+            "value": "fallback"
+          }
+        ]
+      },
+      {
+        "key": "default_fallback_delay",
+        "label": "默认 fallback delay",
+        "kind": "string"
+      },
+      {
+        "key": "default_http_client",
+        "label": "默认 HTTP client",
+        "kind": "string"
+      }
+    ]
+  },
+  "default_rule_type": "default",
+  "rule_type_options": [
+    {
+      "value": "default",
+      "label": "Default"
+    },
+    {
+      "value": "logical",
+      "label": "Logical"
+    }
+  ],
+  "default_nested_rule_type": "default",
+  "nested_rule_type_options": [
+    {
+      "value": "default",
+      "label": "Default"
+    },
+    {
+      "value": "logical",
+      "label": "Logical"
+    }
+  ],
+  "default_rule_set_type": "inline",
+  "rule_set_type_options": [
+    {
+      "value": "inline",
+      "label": "Inline"
+    },
+    {
+      "value": "local",
+      "label": "Local"
+    },
+    {
+      "value": "remote",
+      "label": "Remote"
+    }
+  ],
+  "default_headless_rule_type": "default",
+  "headless_rule_type_options": [
+    {
+      "value": "default",
+      "label": "Default"
+    },
+    {
+      "value": "logical",
+      "label": "Logical"
+    }
+  ]
+}

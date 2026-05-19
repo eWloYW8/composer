@@ -21,6 +21,7 @@
     "key": "listen_port",
     "label": "监听端口",
     "kind": "number",
+    "integer": true,
     "required": true,
     "min": 1,
     "max": 65535,
@@ -45,7 +46,7 @@
   {
     "key": "routing_mark",
     "label": "routing_mark",
-    "kind": "string",
+    "kind": "string-or-number",
     "visibleWhen": [
       {
         "key": "detour",
@@ -146,7 +147,7 @@
   {
     "key": "udp_timeout",
     "label": "UDP timeout",
-    "kind": "string",
+    "kind": "string-or-number",
     "placeholder": "5m",
     "visibleWhen": [
       {
@@ -154,5 +155,52 @@
         "op": "empty"
       }
     ]
+  },
+  {
+    "key": "proxy_protocol",
+    "label": "proxy_protocol",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "proxy_protocol_accept_no_header",
+    "label": "proxy_protocol_accept_no_header",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "detour",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "sniff",
+    "label": "sniff",
+    "kind": "boolean"
+  },
+  {
+    "key": "sniff_override_destination",
+    "label": "sniff_override_destination",
+    "kind": "boolean"
+  },
+  {
+    "key": "sniff_timeout",
+    "label": "sniff_timeout",
+    "kind": "string"
+  },
+  {
+    "key": "domain_strategy",
+    "label": "domain_strategy",
+    "kind": "string"
+  },
+  {
+    "key": "udp_disable_domain_unmapping",
+    "label": "udp_disable_domain_unmapping",
+    "kind": "boolean"
   }
 ]

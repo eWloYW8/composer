@@ -1,0 +1,29 @@
+{
+  "type": "selector",
+  "label": "Selector",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "outbounds",
+      "label": "出站列表",
+      "kind": "string-list",
+      "required": true,
+      "wide": true
+    },
+    {
+      "key": "default",
+      "label": "默认出站",
+      "kind": "string"
+    },
+    {
+      "key": "interrupt_exist_connections",
+      "label": "中断现有连接",
+      "kind": "boolean"
+    }
+  ]
+}

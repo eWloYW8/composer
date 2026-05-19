@@ -3,6 +3,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    emptyOutDir: false,
+  },
   server: {
     port: 5173,
     proxy: {

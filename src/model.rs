@@ -3,14 +3,76 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AppSettings {
+    pub network: NetworkSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct NetworkSettings {
+    pub proxy: ProxySettings,
+    pub github: GithubSettings,
+}
+
+impl Default for NetworkSettings {
+    fn default() -> Self {
+        Self {
+            proxy: ProxySettings::default(),
+            github: GithubSettings::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ProxySettings {
+    pub enabled: bool,
+    pub url: String,
+}
+
+impl Default for ProxySettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            url: String::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GithubSettings {
+    pub api_url: String,
+    pub token: String,
+}
+
+impl Default for GithubSettings {
+    fn default() -> Self {
+        Self {
+            api_url: "https://api.github.com".to_string(),
+            token: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ComposerState {
     pub version: u32,
     pub metadata: Metadata,
     pub base_config: Value,
+    pub global: GlobalConfig,
     pub dns: DnsConfig,
+    pub route: RouteConfig,
     pub inbounds: Vec<Value>,
+    pub endpoints: Vec<Value>,
+    pub http_clients: Vec<Value>,
+    pub certificate: Value,
+    pub certificate_providers: Vec<Value>,
+    pub services: Vec<Value>,
+    pub extra_route_rules: Vec<Value>,
     pub proxy_sources: Vec<ProxySource>,
     pub proxy_groups: Vec<ProxyGroup>,
     pub target_groups: Vec<TargetGroup>,
@@ -64,11 +126,53 @@ impl Default for ComposerState {
             version: 1,
             metadata: Metadata::default(),
             base_config: default_base_config(),
+            global: GlobalConfig::default(),
             dns: DnsConfig::default(),
+            route: RouteConfig::default(),
             inbounds: Vec::new(),
+            endpoints: Vec::new(),
+            http_clients: Vec::new(),
+            certificate: Value::Object(Map::new()),
+            certificate_providers: Vec::new(),
+            services: Vec::new(),
+            extra_route_rules: Vec::new(),
             proxy_sources: vec![ProxySource::sample()],
             proxy_groups: vec![ProxyGroup::sample()],
             target_groups: vec![TargetGroup::sample()],
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GlobalConfig {
+    pub log: Value,
+    pub ntp: Value,
+    pub experimental: Value,
+}
+
+impl Default for GlobalConfig {
+    fn default() -> Self {
+        Self {
+            log: Value::Object(Map::new()),
+            ntp: Value::Object(Map::new()),
+            experimental: Value::Object(Map::new()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RouteConfig {
+    pub options: Value,
+    pub rule_sets: Vec<Value>,
+}
+
+impl Default for RouteConfig {
+    fn default() -> Self {
+        Self {
+            options: Value::Object(Map::new()),
+            rule_sets: Vec::new(),
         }
     }
 }

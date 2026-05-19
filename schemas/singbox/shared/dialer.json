@@ -78,7 +78,7 @@
   {
     "key": "routing_mark",
     "label": "routing_mark",
-    "kind": "string",
+    "kind": "string-or-number",
     "visibleWhen": [
       {
         "key": "detour",

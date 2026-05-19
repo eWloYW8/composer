@@ -10,12 +10,24 @@
   {
     "key": "host",
     "label": "Host",
+    "kind": "string-list",
+    "visibleWhen": [
+      {
+        "key": "type",
+        "op": "one-of",
+        "values": ["http"]
+      }
+    ]
+  },
+  {
+    "key": "host",
+    "label": "Host",
     "kind": "string",
     "visibleWhen": [
       {
         "key": "type",
         "op": "one-of",
-        "values": ["http", "httpupgrade"]
+        "values": ["httpupgrade"]
       }
     ]
   },
@@ -47,6 +59,7 @@
     "key": "headers",
     "label": "Headers",
     "kind": "map",
+    "valueType": "string-list",
     "wide": true,
     "visibleWhen": [
       {
@@ -84,6 +97,7 @@
     "key": "max_early_data",
     "label": "max_early_data",
     "kind": "number",
+    "integer": true,
     "min": 0,
     "visibleWhen": [
       {

@@ -18,6 +18,7 @@
       "key": "server_port",
       "label": "服务器端口",
       "kind": "number",
+      "integer": true,
       "required": true,
       "min": 1,
       "max": 65535,
@@ -37,23 +38,25 @@
       "key": "insecure_concurrency",
       "label": "insecure_concurrency",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
       "key": "extra_headers",
       "label": "extra_headers",
       "kind": "map",
+      "valueType": "string-list",
       "wide": true
     },
     {
       "key": "stream_receive_window",
       "label": "stream_receive_window",
-      "kind": "string"
+      "kind": "string-or-number"
     },
     {
       "key": "udp_over_tcp",
       "label": "UDP over TCP",
-      "kind": "object",
+      "kind": "boolean-or-object",
       "wide": true,
       "fields": [
         {
@@ -66,6 +69,7 @@
           "key": "version",
           "label": "version",
           "kind": "number",
+          "integer": true,
           "min": 1,
           "max": 2
         }
@@ -94,7 +98,7 @@
     {
       "key": "quic_session_receive_window",
       "label": "quic_session_receive_window",
-      "kind": "string"
+      "kind": "string-or-number"
     },
     {
       "key": "tls",
@@ -243,7 +247,7 @@
         {
           "key": "routing_mark",
           "label": "routing_mark",
-          "kind": "string",
+          "kind": "string-or-number",
           "visibleWhen": [
             {
               "key": "detour",
@@ -395,6 +399,7 @@
               "key": "rewrite_ttl",
               "label": "rewrite_ttl",
               "kind": "number",
+              "integer": true,
               "min": 0
             },
             {

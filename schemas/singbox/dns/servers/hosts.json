@@ -17,6 +17,7 @@
       "key": "predefined",
       "label": "预定义 hosts",
       "kind": "map",
+      "valueType": "string-list",
       "wide": true
     }
   ]

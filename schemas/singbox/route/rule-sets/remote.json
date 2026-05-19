@@ -1,0 +1,54 @@
+{
+  "type": "remote",
+  "label": "Remote",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "format",
+      "label": "格式",
+      "kind": "select",
+      "options": ["", "source", "binary"]
+    },
+    {
+      "key": "url",
+      "label": "URL",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "http_client",
+      "label": "HTTP client",
+      "kind": "string-or-object",
+      "wide": true,
+      "ref": "shared/http-client.json",
+      "visibleWhen": [
+        {
+          "key": "download_detour",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "update_interval",
+      "label": "更新间隔",
+      "kind": "string",
+      "placeholder": "1d"
+    },
+    {
+      "key": "download_detour",
+      "label": "下载 detour",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "http_client",
+          "op": "empty"
+        }
+      ]
+    }
+  ]
+}

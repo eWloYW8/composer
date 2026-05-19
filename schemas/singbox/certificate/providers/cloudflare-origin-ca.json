@@ -1,0 +1,68 @@
+{
+  "type": "cloudflare-origin-ca",
+  "label": "Cloudflare Origin CA",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Provider tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "domain",
+      "label": "域名",
+      "kind": "string-list",
+      "required": true,
+      "wide": true,
+      "defaultValue": []
+    },
+    {
+      "key": "data_directory",
+      "label": "数据目录",
+      "kind": "string"
+    },
+    {
+      "key": "api_token",
+      "label": "API token",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "origin_ca_key",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "origin_ca_key",
+      "label": "Origin CA key",
+      "kind": "string",
+      "visibleWhen": [
+        {
+          "key": "api_token",
+          "op": "empty"
+        }
+      ]
+    },
+    {
+      "key": "request_type",
+      "label": "Request type",
+      "kind": "select",
+      "options": ["", "origin-rsa", "origin-ecc"]
+    },
+    {
+      "key": "requested_validity",
+      "label": "Requested validity",
+      "kind": "select",
+      "valueType": "number",
+      "integer": true,
+      "options": ["", "7", "30", "90", "365", "730", "1095", "5475"]
+    },
+    {
+      "key": "http_client",
+      "label": "HTTP client",
+      "kind": "string-or-object",
+      "wide": true,
+      "ref": "shared/http-client.json"
+    }
+  ]
+}

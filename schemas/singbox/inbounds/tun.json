@@ -17,6 +17,7 @@
       "key": "mtu",
       "label": "MTU",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
@@ -46,12 +47,14 @@
       "key": "iproute2_table_index",
       "label": "iproute2 table index",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
       "key": "iproute2_rule_index",
       "label": "iproute2 rule index",
       "kind": "number",
+      "integer": true,
       "min": 0
     },
     {
@@ -62,7 +65,7 @@
     {
       "key": "auto_redirect_input_mark",
       "label": "auto_redirect_input_mark",
-      "kind": "string",
+      "kind": "string-or-number",
       "visibleWhen": [
         {
           "key": "auto_redirect",
@@ -73,7 +76,7 @@
     {
       "key": "auto_redirect_output_mark",
       "label": "auto_redirect_output_mark",
-      "kind": "string",
+      "kind": "string-or-number",
       "visibleWhen": [
         {
           "key": "auto_redirect",
@@ -84,7 +87,7 @@
     {
       "key": "auto_redirect_reset_mark",
       "label": "auto_redirect_reset_mark",
-      "kind": "string",
+      "kind": "string-or-number",
       "visibleWhen": [
         {
           "key": "auto_redirect",
@@ -96,6 +99,7 @@
       "key": "auto_redirect_nfqueue",
       "label": "auto_redirect_nfqueue",
       "kind": "number",
+      "integer": true,
       "min": 0,
       "max": 65535,
       "visibleWhen": [
@@ -109,6 +113,7 @@
       "key": "auto_redirect_iproute2_fallback_rule_index",
       "label": "auto_redirect fallback rule index",
       "kind": "number",
+      "integer": true,
       "min": 0,
       "visibleWhen": [
         {
@@ -168,6 +173,7 @@
       "key": "include_uid",
       "label": "包含 UID",
       "kind": "number-list",
+      "integer": true,
       "min": 0
     },
     {
@@ -179,6 +185,7 @@
       "key": "exclude_uid",
       "label": "排除 UID",
       "kind": "number-list",
+      "integer": true,
       "min": 0
     },
     {
@@ -190,6 +197,7 @@
       "key": "include_android_user",
       "label": "包含 Android 用户",
       "kind": "number-list",
+      "integer": true,
       "min": 0
     },
     {
@@ -212,12 +220,12 @@
       "label": "排除 MAC 地址",
       "kind": "string-list"
     },
-    {
-      "key": "udp_timeout",
-      "label": "UDP timeout",
-      "kind": "string",
-      "placeholder": "5m"
-    },
+  {
+    "key": "udp_timeout",
+    "label": "UDP timeout",
+    "kind": "string-or-number",
+    "placeholder": "5m"
+  },
     {
       "key": "stack",
       "label": "协议栈",
@@ -252,6 +260,7 @@
               "key": "server_port",
               "label": "服务器端口",
               "kind": "number",
+              "integer": true,
               "required": true,
               "min": 1,
               "max": 65535
@@ -269,6 +278,77 @@
           ]
         }
       ]
+    },
+    {
+      "key": "sniff",
+      "label": "sniff",
+      "kind": "boolean"
+    },
+    {
+      "key": "sniff_override_destination",
+      "label": "sniff_override_destination",
+      "kind": "boolean"
+    },
+    {
+      "key": "sniff_timeout",
+      "label": "sniff_timeout",
+      "kind": "string"
+    },
+    {
+      "key": "domain_strategy",
+      "label": "domain_strategy",
+      "kind": "string"
+    },
+    {
+      "key": "udp_disable_domain_unmapping",
+      "label": "udp_disable_domain_unmapping",
+      "kind": "boolean"
+    },
+    {
+      "key": "gso",
+      "label": "gso",
+      "kind": "boolean"
+    },
+    {
+      "key": "inet4_address",
+      "label": "inet4_address",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "inet6_address",
+      "label": "inet6_address",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "inet4_route_address",
+      "label": "inet4_route_address",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "inet6_route_address",
+      "label": "inet6_route_address",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "inet4_route_exclude_address",
+      "label": "inet4_route_exclude_address",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "inet6_route_exclude_address",
+      "label": "inet6_route_exclude_address",
+      "kind": "string-list",
+      "wide": true
+    },
+    {
+      "key": "endpoint_independent_nat",
+      "label": "endpoint_independent_nat",
+      "kind": "boolean"
     }
   ]
 }

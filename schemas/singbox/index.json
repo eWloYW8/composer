@@ -2,7 +2,26 @@
   "schema_version": 1,
   "default_outbound_type": "trojan",
   "default_inbound_type": "mixed",
+  "default_endpoint_type": "wireguard",
+  "default_certificate_provider_type": "acme",
+  "default_service_type": "resolved",
   "outbound_type_options": [
+    {
+      "value": "direct",
+      "label": "Direct"
+    },
+    {
+      "value": "block",
+      "label": "Block"
+    },
+    {
+      "value": "selector",
+      "label": "Selector"
+    },
+    {
+      "value": "urltest",
+      "label": "URLTest"
+    },
     {
       "value": "socks",
       "label": "SOCKS"
@@ -58,6 +77,60 @@
     {
       "value": "tor",
       "label": "Tor"
+    }
+  ],
+  "endpoint_type_options": [
+    {
+      "value": "wireguard",
+      "label": "WireGuard"
+    },
+    {
+      "value": "tailscale",
+      "label": "Tailscale"
+    }
+  ],
+  "certificate_provider_type_options": [
+    {
+      "value": "acme",
+      "label": "ACME"
+    },
+    {
+      "value": "tailscale",
+      "label": "Tailscale"
+    },
+    {
+      "value": "cloudflare-origin-ca",
+      "label": "Cloudflare Origin CA"
+    }
+  ],
+  "service_type_options": [
+    {
+      "value": "resolved",
+      "label": "Resolved"
+    },
+    {
+      "value": "ssm-api",
+      "label": "SSM API"
+    },
+    {
+      "value": "hysteria-realm",
+      "label": "Hysteria Realm"
+    },
+    {
+      "value": "derp",
+      "label": "DERP"
+    },
+    {
+      "value": "ccm",
+      "label": "CCM"
+    },
+    {
+      "value": "ocm",
+      "label": "OCM"
+    },
+    {
+      "value": "oom-killer",
+      "label": "OOM Killer"
     }
   ],
   "inbound_type_options": [

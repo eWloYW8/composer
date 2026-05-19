@@ -18,8 +18,8 @@
     {
       "key": "network",
       "label": "网络",
-      "kind": "select",
-      "options": ["", "tcp", "udp"]
+      "kind": "string-list",
+      "allowedValues": ["tcp", "udp"]
     },
     {
       "key": "override_address",
@@ -30,6 +30,7 @@
       "key": "override_port",
       "label": "覆盖目标端口",
       "kind": "number",
+      "integer": true,
       "min": 1,
       "max": 65535
     }

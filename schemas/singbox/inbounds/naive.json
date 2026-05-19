@@ -26,8 +26,8 @@
     {
       "key": "network",
       "label": "网络",
-      "kind": "select",
-      "options": ["", "tcp", "udp"]
+      "kind": "string-list",
+      "allowedValues": ["tcp", "udp"]
     },
     {
       "key": "quic_congestion_control",

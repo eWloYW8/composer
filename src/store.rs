@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::RwLock;
 
-use crate::model::{ComposerState, ComposerVersion, ComposerVersionSummary};
+use crate::docs::{SingBoxDocs, SingBoxDocsConfig};
+use crate::model::{AppSettings, ComposerState, ComposerVersion, ComposerVersionSummary};
+use crate::network;
 use crate::schema::{self, ComposerSchema};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,6 +16,7 @@ use crate::schema::{self, ComposerSchema};
 struct PersistedData {
     state: ComposerState,
     versions: Vec<ComposerVersion>,
+    settings: AppSettings,
 }
 
 impl Default for PersistedData {
@@ -21,6 +24,7 @@ impl Default for PersistedData {
         Self {
             state: ComposerState::default(),
             versions: Vec::new(),
+            settings: AppSettings::default(),
         }
     }
 }
@@ -29,12 +33,18 @@ impl Default for PersistedData {
 pub struct AppStore {
     path: Arc<PathBuf>,
     schema_path: Arc<PathBuf>,
+    docs: SingBoxDocs,
     data: Arc<RwLock<PersistedData>>,
 }
 
 impl AppStore {
-    pub async fn load_or_create(path: PathBuf, schema_path: PathBuf) -> anyhow::Result<Self> {
+    pub async fn load_or_create(
+        path: PathBuf,
+        schema_path: PathBuf,
+        docs_config: SingBoxDocsConfig,
+    ) -> anyhow::Result<Self> {
         schema::load_schema(&schema_path).await?;
+        let docs = SingBoxDocs::load(docs_config).await?;
         let mut data = if path.exists() {
             let content = tokio::fs::read_to_string(&path)
                 .await
@@ -44,12 +54,14 @@ impl AppStore {
             PersistedData::default()
         };
         data.state.metadata.normalize_fixed_fields();
+        data.settings = network::normalize_settings(data.settings)?;
         for version in &mut data.versions {
             version.state.metadata.normalize_fixed_fields();
         }
         let store = Self {
             path: Arc::new(path),
             schema_path: Arc::new(schema_path),
+            docs,
             data: Arc::new(RwLock::new(data)),
         };
         store.save().await?;
@@ -62,6 +74,24 @@ impl AppStore {
 
     pub async fn schema(&self) -> anyhow::Result<ComposerSchema> {
         schema::load_schema(&self.schema_path).await
+    }
+
+    pub fn docs(&self) -> SingBoxDocs {
+        self.docs.clone()
+    }
+
+    pub async fn settings(&self) -> AppSettings {
+        self.data.read().await.settings.clone()
+    }
+
+    pub async fn replace_settings(&self, settings: AppSettings) -> anyhow::Result<AppSettings> {
+        let settings = network::normalize_settings(settings)?;
+        {
+            let mut guard = self.data.write().await;
+            guard.settings = settings;
+        }
+        self.save().await?;
+        Ok(self.settings().await)
     }
 
     pub async fn replace(&self, mut state: ComposerState) -> anyhow::Result<ComposerState> {
@@ -155,6 +185,7 @@ fn parse_persisted_data(content: &str, path: &PathBuf) -> anyhow::Result<Persist
             state: serde_json::from_value(value)
                 .with_context(|| format!("failed to parse legacy state {}", path.display()))?,
             versions: Vec::new(),
+            settings: AppSettings::default(),
         })
     }
 }

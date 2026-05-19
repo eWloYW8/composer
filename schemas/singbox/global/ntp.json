@@ -1,0 +1,73 @@
+{
+  "fields": [
+    {
+      "key": "enabled",
+      "label": "启用",
+      "kind": "boolean"
+    },
+    {
+      "key": "server",
+      "label": "服务器地址",
+      "kind": "string",
+      "required": true,
+      "visibleWhen": [
+        {
+          "key": "enabled",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "server_port",
+      "label": "服务器端口",
+      "kind": "number",
+      "integer": true,
+      "required": true,
+      "min": 1,
+      "max": 65535,
+      "visibleWhen": [
+        {
+          "key": "enabled",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "interval",
+      "label": "同步间隔",
+      "kind": "string",
+      "placeholder": "30m",
+      "visibleWhen": [
+        {
+          "key": "enabled",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "write_to_system",
+      "label": "写入系统时间",
+      "kind": "boolean",
+      "visibleWhen": [
+        {
+          "key": "enabled",
+          "op": "present"
+        }
+      ]
+    },
+    {
+      "key": "_dialer",
+      "label": "拨号选项",
+      "kind": "object",
+      "wide": true,
+      "flatten": true,
+      "ref": "shared/dialer.json",
+      "visibleWhen": [
+        {
+          "key": "enabled",
+          "op": "present"
+        }
+      ]
+    }
+  ]
+}

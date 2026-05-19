@@ -17,6 +17,11 @@
     "kind": "boolean",
     "visibleWhen": [
       {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
         "key": "engine",
         "op": "not-one-of",
         "values": ["apple", "windows"]
@@ -54,6 +59,25 @@
     "key": "cipher_suites",
     "label": "Cipher suites",
     "kind": "string-list",
+    "allowedValues": [
+      "TLS_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_AES_128_GCM_SHA256",
+      "TLS_AES_256_GCM_SHA384",
+      "TLS_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+      "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+      "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
+    ],
     "visibleWhen": [
       {
         "key": "engine",
@@ -79,23 +103,65 @@
     "key": "certificate",
     "label": "证书",
     "kind": "string-list",
-    "wide": true
+    "wide": true,
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
+        "key": "certificate_public_key_sha256",
+        "op": "empty"
+      }
+    ]
   },
   {
     "key": "certificate_path",
     "label": "证书路径",
-    "kind": "string"
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
+        "key": "certificate_public_key_sha256",
+        "op": "empty"
+      }
+    ]
   },
   {
     "key": "certificate_public_key_sha256",
     "label": "证书公钥 SHA256",
-    "kind": "string-list"
+    "kind": "string-list",
+    "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
+        "key": "certificate",
+        "op": "empty"
+      },
+      {
+        "key": "certificate_path",
+        "op": "empty"
+      }
+    ]
   },
   {
     "key": "client_certificate",
     "label": "客户端证书",
     "kind": "string-list",
     "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
       {
         "key": "engine",
         "op": "not-one-of",
@@ -109,6 +175,11 @@
     "kind": "string",
     "visibleWhen": [
       {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
         "key": "engine",
         "op": "not-one-of",
         "values": ["apple", "windows"]
@@ -120,6 +191,11 @@
     "label": "客户端密钥",
     "kind": "string-list",
     "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
       {
         "key": "engine",
         "op": "not-one-of",
@@ -133,6 +209,11 @@
     "kind": "string",
     "visibleWhen": [
       {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
         "key": "engine",
         "op": "not-one-of",
         "values": ["apple", "windows"]
@@ -145,8 +226,9 @@
     "kind": "boolean",
     "visibleWhen": [
       {
-        "key": "record_fragment",
-        "op": "empty"
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
       },
       {
         "key": "engine",
@@ -161,8 +243,18 @@
     "kind": "string",
     "visibleWhen": [
       {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
         "key": "fragment",
         "op": "present"
+      },
+      {
+        "key": "engine",
+        "op": "not-one-of",
+        "values": ["apple", "windows"]
       }
     ]
   },
@@ -172,8 +264,9 @@
     "kind": "boolean",
     "visibleWhen": [
       {
-        "key": "fragment",
-        "op": "empty"
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
       },
       {
         "key": "engine",
@@ -188,6 +281,15 @@
     "kind": "string",
     "visibleWhen": [
       {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
+        "key": "disable_sni",
+        "op": "empty"
+      },
+      {
         "key": "engine",
         "op": "not-one-of",
         "values": ["apple", "windows"]
@@ -197,11 +299,22 @@
   {
     "key": "spoof_method",
     "label": "TLS spoof method",
-    "kind": "string",
+    "kind": "select",
+    "options": ["", "wrong-sequence", "wrong-checksum", "wrong-ack", "wrong-md5", "wrong-timestamp"],
     "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
       {
         "key": "spoof",
         "op": "present"
+      },
+      {
+        "key": "engine",
+        "op": "not-one-of",
+        "values": ["apple", "windows"]
       }
     ]
   },
@@ -260,9 +373,24 @@
         "key": "query_server_name",
         "label": "ECH query server name",
         "kind": "string"
+      },
+      {
+        "key": "pq_signature_schemes_enabled",
+        "label": "PQ signature schemes enabled",
+        "kind": "boolean"
+      },
+      {
+        "key": "dynamic_record_sizing_disabled",
+        "label": "Dynamic record sizing disabled",
+        "kind": "boolean"
       }
     ],
     "visibleWhen": [
+      {
+        "key": "reality.enabled",
+        "op": "not-equals",
+        "value": true
+      },
       {
         "key": "engine",
         "op": "not-one-of",
@@ -284,13 +412,15 @@
       {
         "key": "fingerprint",
         "label": "Fingerprint",
-        "kind": "string"
+        "kind": "select",
+        "options": ["", "chrome", "firefox", "edge", "safari", "360", "qq", "ios", "android", "random", "randomized"]
       }
     ],
     "visibleWhen": [
       {
         "key": "engine",
-        "op": "empty"
+        "op": "not-one-of",
+        "values": ["apple", "windows"]
       }
     ]
   },
@@ -318,8 +448,59 @@
     ],
     "visibleWhen": [
       {
-        "key": "engine",
+        "key": "utls.enabled",
+        "op": "equals",
+        "value": true
+      },
+      {
+        "key": "ech.enabled",
+        "op": "not-equals",
+        "value": true
+      },
+      {
+        "key": "spoof",
         "op": "empty"
+      },
+      {
+        "key": "certificate",
+        "op": "empty"
+      },
+      {
+        "key": "certificate_path",
+        "op": "empty"
+      },
+      {
+        "key": "certificate_public_key_sha256",
+        "op": "empty"
+      },
+      {
+        "key": "client_certificate",
+        "op": "empty"
+      },
+      {
+        "key": "client_certificate_path",
+        "op": "empty"
+      },
+      {
+        "key": "client_key",
+        "op": "empty"
+      },
+      {
+        "key": "client_key_path",
+        "op": "empty"
+      },
+      {
+        "key": "fragment",
+        "op": "empty"
+      },
+      {
+        "key": "record_fragment",
+        "op": "empty"
+      },
+      {
+        "key": "engine",
+        "op": "not-one-of",
+        "values": ["apple", "windows"]
       }
     ]
   }

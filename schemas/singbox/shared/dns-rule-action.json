@@ -15,6 +15,26 @@
     ]
   },
   {
+    "key": "_dns_route_options_requires_any",
+    "label": "DNS route-options 至少需要填写一个路由选项",
+    "kind": "constraint",
+    "requiresAny": [
+      "strategy",
+      "timeout",
+      "disable_cache",
+      "disable_optimistic_cache",
+      "rewrite_ttl",
+      "client_subnet"
+    ],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "route-options"
+      }
+    ]
+  },
+  {
     "key": "server",
     "label": "DNS 服务器",
     "kind": "string",
@@ -31,7 +51,7 @@
     "key": "strategy",
     "label": "域名策略",
     "kind": "select",
-    "options": ["", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"],
+    "options": ["", "as_is", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"],
     "visibleWhen": [
       {
         "key": "action",
@@ -80,6 +100,7 @@
     "key": "rewrite_ttl",
     "label": "重写 TTL",
     "kind": "number",
+    "integer": true,
     "min": 0,
     "visibleWhen": [
       {
@@ -105,7 +126,7 @@
     "key": "method",
     "label": "拒绝方式",
     "kind": "select",
-    "options": ["", "default", "drop"],
+    "options": ["", "default", "drop", "reply"],
     "visibleWhen": [
       {
         "key": "action",
@@ -134,9 +155,12 @@
   {
     "key": "rcode",
     "label": "RCODE",
-    "kind": "select",
-    "options": [
-      "",
+    "kind": "string-or-number",
+    "integer": true,
+    "min": 0,
+    "max": 65535,
+    "placeholder": "NOERROR 或 0",
+    "allowedValues": [
       "NOERROR",
       "FORMERR",
       "SERVFAIL",

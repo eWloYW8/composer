@@ -4,18 +4,22 @@ use chrono::Utc;
 use serde_json::{Map, Number, Value, json};
 use url::Url;
 
-use crate::model::{ProxySource, ProxySourceKind};
+use crate::{
+    model::{NetworkSettings, ProxySource, ProxySourceKind},
+    network,
+};
 
-pub async fn refresh_source(source: &mut ProxySource) -> anyhow::Result<usize> {
+pub async fn refresh_source(
+    source: &mut ProxySource,
+    settings: &NetworkSettings,
+) -> anyhow::Result<usize> {
     let content = match source.kind {
         ProxySourceKind::Manual => return Ok(source.nodes.len()),
         ProxySourceKind::Subscription => {
             if source.subscription.url.trim().is_empty() {
                 bail!("subscription url is empty");
             }
-            let client = reqwest::Client::builder()
-                .danger_accept_invalid_certs(source.subscription.skip_tls_verify)
-                .build()?;
+            let client = network::build_client(settings, source.subscription.skip_tls_verify)?;
             let mut request = client.get(source.subscription.url.trim());
             if !source.subscription.user_agent.trim().is_empty() {
                 request = request.header("user-agent", source.subscription.user_agent.trim());

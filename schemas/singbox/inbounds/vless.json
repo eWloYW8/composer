@@ -31,7 +31,8 @@
           "key": "uuid",
           "label": "UUID",
           "kind": "string",
-          "required": true
+          "required": true,
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
         {
           "key": "flow",

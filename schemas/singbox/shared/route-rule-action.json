@@ -1,0 +1,671 @@
+[
+  {
+    "key": "action",
+    "label": "动作",
+    "kind": "select",
+    "required": true,
+    "defaultValue": "route",
+    "options": [
+      "route",
+      "bypass",
+      "direct",
+      "reject",
+      "hijack-dns",
+      "route-options",
+      "sniff",
+      "resolve"
+    ]
+  },
+  {
+    "key": "_route_options_requires_any",
+    "label": "route-options 至少需要填写一个路由选项",
+    "kind": "constraint",
+    "requiresAny": [
+      "override_address",
+      "override_port",
+      "network_strategy",
+      "fallback_delay",
+      "udp_disable_domain_unmapping",
+      "udp_connect",
+      "udp_timeout",
+      "tls_fragment",
+      "tls_record_fragment",
+      "tls_spoof"
+    ],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "route-options"
+      }
+    ]
+  },
+  {
+    "key": "outbound",
+    "label": "出站",
+    "kind": "string",
+    "required": true,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "route"
+      }
+    ]
+  },
+  {
+    "key": "outbound",
+    "label": "出站",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "bypass"
+      }
+    ]
+  },
+  {
+    "key": "override_address",
+    "label": "覆盖目标地址",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "override_port",
+    "label": "覆盖目标端口",
+    "kind": "number",
+    "integer": true,
+    "min": 0,
+    "max": 65535,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "network_strategy",
+    "label": "网络策略",
+    "kind": "select",
+    "options": ["", "default", "fallback", "hybrid"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "fallback_delay",
+    "label": "fallback delay",
+    "kind": "number",
+    "integer": true,
+    "min": 0,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "udp_disable_domain_unmapping",
+    "label": "UDP 禁用域名反映射",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "udp_connect",
+    "label": "UDP connect",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "udp_timeout",
+    "label": "UDP 超时",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "tls_fragment",
+    "label": "TLS 分片",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      },
+      {
+        "key": "tls_record_fragment",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tls_fragment_fallback_delay",
+    "label": "TLS 分片 fallback delay",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      },
+      {
+        "key": "tls_fragment",
+        "op": "present"
+      }
+    ]
+  },
+  {
+    "key": "tls_record_fragment",
+    "label": "TLS record 分片",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      },
+      {
+        "key": "tls_fragment",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "tls_spoof",
+    "label": "TLS spoof SNI",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      }
+    ]
+  },
+  {
+    "key": "tls_spoof_method",
+    "label": "TLS spoof method",
+    "kind": "select",
+    "options": [
+      "",
+      "wrong-sequence",
+      "wrong-checksum",
+      "wrong-ack",
+      "wrong-md5",
+      "wrong-timestamp"
+    ],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["route", "bypass", "route-options"]
+      },
+      {
+        "key": "tls_spoof",
+        "op": "present"
+      }
+    ]
+  },
+  {
+    "key": "bind_interface",
+    "label": "绑定接口",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "inet4_bind_address",
+    "label": "IPv4 绑定地址",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "inet6_bind_address",
+    "label": "IPv6 绑定地址",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "bind_address_no_port",
+    "label": "绑定地址不含端口",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      },
+      {
+        "key": "network_strategy",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "protect_path",
+    "label": "protect_path",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "routing_mark",
+    "label": "routing_mark",
+    "kind": "string-or-number",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "reuse_addr",
+    "label": "reuse_addr",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "netns",
+    "label": "netns",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "connect_timeout",
+    "label": "连接超时",
+    "kind": "string",
+    "placeholder": "5s",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "tcp_fast_open",
+    "label": "TCP Fast Open",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "tcp_multi_path",
+    "label": "TCP Multi Path",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "disable_tcp_keep_alive",
+    "label": "禁用 TCP keepalive",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "tcp_keep_alive",
+    "label": "TCP keepalive",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "tcp_keep_alive_interval",
+    "label": "TCP keepalive 间隔",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "udp_fragment",
+    "label": "UDP fragment",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "domain_resolver",
+    "label": "Domain resolver",
+    "kind": "string-or-object",
+    "wide": true,
+    "ref": "shared/dns-route-options.json",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "network_strategy",
+    "label": "网络策略",
+    "kind": "select",
+    "options": ["", "default", "fallback", "hybrid"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      },
+      {
+        "key": "bind_interface",
+        "op": "empty"
+      },
+      {
+        "key": "inet4_bind_address",
+        "op": "empty"
+      },
+      {
+        "key": "inet6_bind_address",
+        "op": "empty"
+      }
+    ]
+  },
+  {
+    "key": "network_type",
+    "label": "网络类型",
+    "kind": "string-list",
+    "allowedValues": ["wifi", "cellular", "ethernet", "other"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "fallback_network_type",
+    "label": "fallback 网络类型",
+    "kind": "string-list",
+    "allowedValues": ["wifi", "cellular", "ethernet", "other"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      },
+      {
+        "key": "network_strategy",
+        "op": "equals",
+        "value": "fallback"
+      }
+    ]
+  },
+  {
+    "key": "fallback_delay",
+    "label": "fallback delay",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "domain_strategy",
+    "label": "domain_strategy",
+    "kind": "select",
+    "options": [
+      "",
+      "as_is",
+      "prefer_ipv4",
+      "prefer_ipv6",
+      "ipv4_only",
+      "ipv6_only"
+    ],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "direct"
+      }
+    ]
+  },
+  {
+    "key": "method",
+    "label": "拒绝方式",
+    "kind": "select",
+    "options": ["", "default", "drop", "reply"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "reject"
+      }
+    ]
+  },
+  {
+    "key": "no_drop",
+    "label": "不自动丢弃",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "reject"
+      },
+      {
+        "key": "method",
+        "op": "not-equals",
+        "value": "drop"
+      }
+    ]
+  },
+  {
+    "key": "sniffer",
+    "label": "探测器",
+    "kind": "string-list",
+    "allowedValues": ["tls", "http", "quic", "stun", "dns", "bittorrent", "ssh", "rdp"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "sniff"
+      }
+    ]
+  },
+  {
+    "key": "timeout",
+    "label": "超时",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "one-of",
+        "values": ["sniff", "resolve"]
+      }
+    ]
+  },
+  {
+    "key": "server",
+    "label": "DNS 服务器",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "resolve"
+      }
+    ]
+  },
+  {
+    "key": "strategy",
+    "label": "解析策略",
+    "kind": "select",
+    "options": ["", "as_is", "prefer_ipv4", "prefer_ipv6", "ipv4_only", "ipv6_only"],
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "resolve"
+      }
+    ]
+  },
+  {
+    "key": "disable_cache",
+    "label": "禁用缓存",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "resolve"
+      }
+    ]
+  },
+  {
+    "key": "disable_optimistic_cache",
+    "label": "禁用乐观缓存",
+    "kind": "boolean",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "resolve"
+      }
+    ]
+  },
+  {
+    "key": "rewrite_ttl",
+    "label": "重写 TTL",
+    "kind": "number",
+    "integer": true,
+    "min": 0,
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "resolve"
+      }
+    ]
+  },
+  {
+    "key": "client_subnet",
+    "label": "Client subnet",
+    "kind": "string",
+    "visibleWhen": [
+      {
+        "key": "action",
+        "op": "equals",
+        "value": "resolve"
+      }
+    ]
+  }
+]

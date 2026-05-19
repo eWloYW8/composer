@@ -1,0 +1,24 @@
+{
+  "type": "local",
+  "label": "Local",
+  "fields": [
+    {
+      "key": "tag",
+      "label": "Tag",
+      "kind": "string",
+      "required": true
+    },
+    {
+      "key": "format",
+      "label": "格式",
+      "kind": "select",
+      "options": ["", "source", "binary"]
+    },
+    {
+      "key": "path",
+      "label": "路径",
+      "kind": "string",
+      "required": true
+    }
+  ]
+}
